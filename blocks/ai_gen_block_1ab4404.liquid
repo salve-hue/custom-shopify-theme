@@ -1,0 +1,421 @@
+{% doc %}
+  @prompt
+    Create a popup message which I can edit, text, colors, and other functions. I need to tell visitors about being out of office on certain days.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-popup-overlay-{{ ai_gen_id }} {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: {{ block.settings.overlay_color }};
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 9998;
+  }
+
+  .ai-popup-overlay-{{ ai_gen_id }}.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .ai-popup-container-{{ ai_gen_id }} {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    max-width: {{ block.settings.popup_width }}px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    padding: {{ block.settings.padding }}px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    z-index: 9999;
+  }
+
+  .ai-popup-container-{{ ai_gen_id }}.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .ai-popup-header-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .ai-popup-title-{{ ai_gen_id }} {
+    color: {{ block.settings.title_color }};
+    font-size: {{ block.settings.title_size }}px;
+    margin: 0;
+    flex-grow: 1;
+  }
+
+  .ai-popup-close-{{ ai_gen_id }} {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    margin: -8px -8px 0 0;
+    color: {{ block.settings.text_color }};
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .ai-popup-close-{{ ai_gen_id }}:hover {
+    opacity: 1;
+  }
+
+  .ai-popup-close-{{ ai_gen_id }} svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .ai-popup-content-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.text_size }}px;
+    line-height: 1.6;
+  }
+
+  .ai-popup-content-{{ ai_gen_id }} p {
+    margin: 0 0 16px;
+  }
+
+  .ai-popup-content-{{ ai_gen_id }} p:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-popup-button-{{ ai_gen_id }} {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    text-decoration: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .ai-popup-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-popup-container-{{ ai_gen_id }} {
+      max-width: 95%;
+      padding: {{ block.settings.padding | times: 0.75 }}px;
+    }
+
+    .ai-popup-title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_size | times: 0.85 }}px;
+    }
+
+    .ai-popup-content-{{ ai_gen_id }} {
+      font-size: {{ block.settings.text_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<out-of-office-popup-{{ ai_gen_id }} {{ block.shopify_attributes }}>
+  <div class="ai-popup-overlay-{{ ai_gen_id }}"></div>
+  
+  <div class="ai-popup-container-{{ ai_gen_id }}">
+    <div class="ai-popup-header-{{ ai_gen_id }}">
+      {% if block.settings.title != blank %}
+        <h2 class="ai-popup-title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+      {% endif %}
+      <button
+        class="ai-popup-close-{{ ai_gen_id }}"
+        aria-label="Close popup"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    
+    {% if block.settings.message != blank %}
+      <div class="ai-popup-content-{{ ai_gen_id }}">
+        {{ block.settings.message }}
+      </div>
+    {% endif %}
+
+    {% if block.settings.button_text != blank %}
+      <button class="ai-popup-button-{{ ai_gen_id }}">
+        {{ block.settings.button_text }}
+      </button>
+    {% endif %}
+  </div>
+</out-of-office-popup-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class OutOfOfficePopup{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.overlay = this.querySelector('.ai-popup-overlay-{{ ai_gen_id }}');
+        this.popup = this.querySelector('.ai-popup-container-{{ ai_gen_id }}');
+        this.closeButton = this.querySelector('.ai-popup-close-{{ ai_gen_id }}');
+        this.actionButton = this.querySelector('.ai-popup-button-{{ ai_gen_id }}');
+        this.cookieName = 'popup_dismissed_{{ ai_gen_id }}';
+        this.showDelay = {{ block.settings.show_delay }};
+        this.dismissDuration = {{ block.settings.dismiss_duration }};
+      }
+
+      connectedCallback() {
+        if (this.shouldShowPopup()) {
+          setTimeout(() => {
+            this.showPopup();
+          }, this.showDelay * 1000);
+        }
+
+        this.closeButton.addEventListener('click', () => this.hidePopup());
+        this.overlay.addEventListener('click', () => this.hidePopup());
+        
+        if (this.actionButton) {
+          this.actionButton.addEventListener('click', () => this.hidePopup());
+        }
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && this.popup.classList.contains('active')) {
+            this.hidePopup();
+          }
+        });
+      }
+
+      shouldShowPopup() {
+        const dismissed = this.getCookie(this.cookieName);
+        return !dismissed;
+      }
+
+      showPopup() {
+        this.overlay.classList.add('active');
+        this.popup.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      hidePopup() {
+        this.overlay.classList.remove('active');
+        this.popup.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        if (this.dismissDuration > 0) {
+          this.setCookie(this.cookieName, 'true', this.dismissDuration);
+        }
+      }
+
+      setCookie(name, value, days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        const expires = 'expires=' + date.toUTCString();
+        document.cookie = name + '=' + value + ';' + expires + ';path=/';
+      }
+
+      getCookie(name) {
+        const nameEQ = name + '=';
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+          if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+      }
+    }
+
+    customElements.define('out-of-office-popup-{{ ai_gen_id }}', OutOfOfficePopup{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Out of office popup",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Out of Office Notice"
+    },
+    {
+      "type": "richtext",
+      "id": "message",
+      "label": "Message",
+      "default": "<p>We will be closed on the following dates:</p><p><strong>December 24-26, 2025</strong></p><p>We appreciate your patience and will respond to all inquiries when we return.</p>"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Got it"
+    },
+    {
+      "type": "header",
+      "content": "Behavior"
+    },
+    {
+      "type": "range",
+      "id": "show_delay",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Show delay",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "dismiss_duration",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "unit": "d",
+      "label": "Hide for",
+      "default": 7,
+      "info": "Number of days to hide popup after dismissal. Set to 0 to show on every page load."
+    },
+    {
+      "type": "header",
+      "content": "Popup style"
+    },
+    {
+      "type": "range",
+      "id": "popup_width",
+      "min": 300,
+      "max": 800,
+      "step": 50,
+      "unit": "px",
+      "label": "Maximum width",
+      "default": 500
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "min": 20,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Title"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "min": 16,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Size",
+      "default": 24
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Color",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Message"
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Size",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Color",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 6
+    }
+  ],
+  "presets": [
+    {
+      "name": "Out of office popup"
+    }
+  ]
+}
+{% endschema %}

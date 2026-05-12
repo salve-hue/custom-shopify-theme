@@ -1,0 +1,1093 @@
+{% doc %}
+  @prompt
+    Create a vertical list of Gaming Essential add-ons for buyers to add to their bundle. It should pull from the Gaming Essentials collection or have the option to choose which collection to choose., If a product in the collection has a variant, it should have a small dropdown to select which variant., Next to the variant dropdown, put some sort of icon or arrow to indicate it's a dropdown so it doesn't confuse buyers., Could you add a small color square next to each variant in the dropdown menus with a color matching the variant title? For instance, if it's Black, put a small color swatch black square next to it. Match the color with the closest common color of that name., Make the dropdown menu on top of any other object when expanded., When I click a dropdown menu it should be on top of everything else. It should be moved up to the top layer so it covers anything it expands over., Remove the dropdown menus from the products. Instead, when someone clicks "add to cart", pop open a lightbox with variant options to add to cart., Perfect. If it doesn't have a variant or child objects, just add it to the cart.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-addon-list-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    padding: {{ block.settings.section_padding }}px 0;
+  }
+
+  @media screen and (min-width: 750px) {
+    .ai-addon-list-{{ ai_gen_id }} {
+      width: {{ block.settings.desktop_width_percent }}%;
+    }
+  }
+
+  .ai-addon-list-container-{{ ai_gen_id }} {
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    padding: {{ block.settings.container_padding }}px;
+  }
+
+  .ai-addon-list-header-{{ ai_gen_id }} {
+    margin-bottom: {{ block.settings.header_spacing }}px;
+  }
+
+  .ai-addon-list-title-{{ ai_gen_id }} {
+    font-family: var(--font-heading-family);
+    font-size: {{ block.settings.title_size }}px;
+    font-weight: 700;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 8px 0;
+    line-height: 1.2;
+  }
+
+  .ai-addon-list-description-{{ ai_gen_id }} {
+    font-size: {{ block.settings.description_size }}px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.8;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .ai-addon-list-items-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: {{ block.settings.item_spacing }}px;
+  }
+
+  .ai-addon-item-{{ ai_gen_id }} {
+    display: flex;
+    gap: 16px;
+    padding: {{ block.settings.item_padding }}px;
+    background-color: {{ block.settings.item_background }};
+    border: 1px solid {{ block.settings.item_border_color }};
+    border-radius: {{ block.settings.item_border_radius }}px;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .ai-addon-item-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.item_hover_border_color }};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .ai-addon-image-wrapper-{{ ai_gen_id }} {
+    flex-shrink: 0;
+    width: {{ block.settings.image_size }}px;
+    height: {{ block.settings.image_size }}px;
+    border-radius: {{ block.settings.image_border_radius }}px;
+    overflow: hidden;
+    background-color: #f5f5f5;
+  }
+
+  .ai-addon-image-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ai-addon-image-placeholder-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+  }
+
+  .ai-addon-image-placeholder-{{ ai_gen_id }} svg {
+    width: 60%;
+    height: 60%;
+    opacity: 0.3;
+  }
+
+  .ai-addon-content-{{ ai_gen_id }} {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .ai-addon-title-{{ ai_gen_id }} {
+    font-family: var(--font-heading-family);
+    font-size: {{ block.settings.product_title_size }}px;
+    font-weight: 600;
+    color: {{ block.settings.text_color }};
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .ai-addon-title-link-{{ ai_gen_id }} {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ai-addon-title-link-{{ ai_gen_id }}:hover {
+    color: {{ block.settings.link_hover_color }};
+  }
+
+  .ai-addon-price-{{ ai_gen_id }} {
+    font-size: {{ block.settings.price_size }}px;
+    font-weight: 500;
+    color: {{ block.settings.price_color }};
+    margin: 0;
+  }
+
+  .ai-addon-actions-{{ ai_gen_id }} {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .ai-addon-button-{{ ai_gen_id }} {
+    padding: 10px 20px;
+    background-color: {{ block.settings.button_background }};
+    color: {{ block.settings.button_text_color }};
+    border: 1px solid {{ block.settings.button_border_color }};
+    border-radius: {{ block.settings.button_border_radius }}px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .ai-addon-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_background }};
+    color: {{ block.settings.button_hover_text_color }};
+    border-color: {{ block.settings.button_hover_border_color }};
+  }
+
+  .ai-addon-button-{{ ai_gen_id }}:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .ai-addon-empty-state-{{ ai_gen_id }} {
+    text-align: center;
+    padding: 40px 20px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.6;
+  }
+
+  .ai-addon-modal-overlay-{{ ai_gen_id }} {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 9998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .ai-addon-modal-overlay-{{ ai_gen_id }}.active {
+    display: flex;
+  }
+
+  .ai-addon-modal-{{ ai_gen_id }} {
+    background-color: {{ block.settings.modal_background }};
+    border-radius: {{ block.settings.modal_border_radius }}px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    z-index: 9999;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .ai-addon-modal-header-{{ ai_gen_id }} {
+    padding: 24px;
+    border-bottom: 1px solid {{ block.settings.item_border_color }};
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ai-addon-modal-title-{{ ai_gen_id }} {
+    font-family: var(--font-heading-family);
+    font-size: 20px;
+    font-weight: 600;
+    color: {{ block.settings.text_color }};
+    margin: 0;
+  }
+
+  .ai-addon-modal-close-{{ ai_gen_id }} {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+  }
+
+  .ai-addon-modal-close-{{ ai_gen_id }}:hover {
+    opacity: 1;
+  }
+
+  .ai-addon-modal-body-{{ ai_gen_id }} {
+    padding: 24px;
+  }
+
+  .ai-addon-modal-product-info-{{ ai_gen_id }} {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ai-addon-modal-image-{{ ai_gen_id }} {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .ai-addon-modal-image-placeholder-{{ ai_gen_id }} {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    background-color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ai-addon-modal-image-placeholder-{{ ai_gen_id }} svg {
+    width: 60%;
+    height: 60%;
+    opacity: 0.3;
+  }
+
+  .ai-addon-modal-product-details-{{ ai_gen_id }} {
+    flex-grow: 1;
+  }
+
+  .ai-addon-modal-product-title-{{ ai_gen_id }} {
+    font-family: var(--font-heading-family);
+    font-size: 18px;
+    font-weight: 600;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 8px 0;
+  }
+
+  .ai-addon-modal-product-price-{{ ai_gen_id }} {
+    font-size: 16px;
+    font-weight: 500;
+    color: {{ block.settings.price_color }};
+    margin: 0;
+  }
+
+  .ai-addon-modal-variants-label-{{ ai_gen_id }} {
+    font-size: 14px;
+    font-weight: 600;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 12px 0;
+  }
+
+  .ai-addon-modal-variants-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .ai-addon-modal-variant-option-{{ ai_gen_id }} {
+    padding: 12px 16px;
+    border: 2px solid {{ block.settings.item_border_color }};
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ai-addon-modal-variant-option-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.item_hover_border_color }};
+  }
+
+  .ai-addon-modal-variant-option-{{ ai_gen_id }}.selected {
+    border-color: {{ block.settings.button_background }};
+    background-color: {{ block.settings.button_background }}10;
+  }
+
+  .ai-addon-modal-variant-option-{{ ai_gen_id }}.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ai-addon-modal-variant-option-{{ ai_gen_id }}.disabled:hover {
+    border-color: {{ block.settings.item_border_color }};
+  }
+
+  .ai-addon-color-swatch-{{ ai_gen_id }} {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+  }
+
+  .ai-addon-modal-variant-text-{{ ai_gen_id }} {
+    flex-grow: 1;
+    font-size: 14px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-addon-modal-variant-price-{{ ai_gen_id }} {
+    font-size: 14px;
+    font-weight: 500;
+    color: {{ block.settings.price_color }};
+  }
+
+  .ai-addon-modal-footer-{{ ai_gen_id }} {
+    padding: 0 24px 24px 24px;
+  }
+
+  .ai-addon-modal-add-button-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 14px 24px;
+    background-color: {{ block.settings.button_background }};
+    color: {{ block.settings.button_text_color }};
+    border: 1px solid {{ block.settings.button_border_color }};
+    border-radius: {{ block.settings.button_border_radius }}px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .ai-addon-modal-add-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_background }};
+    color: {{ block.settings.button_hover_text_color }};
+    border-color: {{ block.settings.button_hover_border_color }};
+  }
+
+  .ai-addon-modal-add-button-{{ ai_gen_id }}:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-addon-item-{{ ai_gen_id }} {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ai-addon-image-wrapper-{{ ai_gen_id }} {
+      width: 100%;
+      height: 200px;
+    }
+
+    .ai-addon-actions-{{ ai_gen_id }} {
+      width: 100%;
+      align-items: stretch;
+    }
+
+    .ai-addon-button-{{ ai_gen_id }} {
+      width: 100%;
+    }
+
+    .ai-addon-modal-{{ ai_gen_id }} {
+      max-width: 100%;
+    }
+
+    .ai-addon-modal-product-info-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-addon-modal-image-{{ ai_gen_id }},
+    .ai-addon-modal-image-placeholder-{{ ai_gen_id }} {
+      width: 100%;
+      height: 200px;
+    }
+  }
+{% endstyle %}
+
+<addon-list-{{ ai_gen_id }}
+  class="ai-addon-list-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-addon-list-container-{{ ai_gen_id }}">
+    {% if block.settings.title != blank or block.settings.description != blank %}
+      <div class="ai-addon-list-header-{{ ai_gen_id }}">
+        {% if block.settings.title != blank %}
+          <h3 class="ai-addon-list-title-{{ ai_gen_id }}">{{ block.settings.title }}</h3>
+        {% endif %}
+        {% if block.settings.description != blank %}
+          <p class="ai-addon-list-description-{{ ai_gen_id }}">{{ block.settings.description }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if block.settings.collection != blank %}
+      {% assign collection = block.settings.collection %}
+      {% assign product_limit = block.settings.product_limit %}
+
+      {% if collection.products.size > 0 %}
+        <div class="ai-addon-list-items-{{ ai_gen_id }}">
+          {% for product in collection.products limit: product_limit %}
+            <div class="ai-addon-item-{{ ai_gen_id }}" data-product-id="{{ product.id }}">
+              <div class="ai-addon-image-wrapper-{{ ai_gen_id }}">
+                {% if product.featured_image %}
+                  <img
+                    src="{{ product.featured_image | image_url: width: 200 }}"
+                    alt="{{ product.featured_image.alt | escape }}"
+                    class="ai-addon-image-{{ ai_gen_id }}"
+                    loading="lazy"
+                    width="200"
+                    height="200"
+                  >
+                {% else %}
+                  <div class="ai-addon-image-placeholder-{{ ai_gen_id }}">
+                    {{ 'product-1' | placeholder_svg_tag }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="ai-addon-content-{{ ai_gen_id }}">
+                <h4 class="ai-addon-title-{{ ai_gen_id }}">
+                  <a
+                    href="{{ product.url }}"
+                    class="ai-addon-title-link-{{ ai_gen_id }}"
+                  >
+                    {{ product.title }}
+                  </a>
+                </h4>
+                {% if block.settings.show_price %}
+                  <p class="ai-addon-price-{{ ai_gen_id }}">
+                    {% if product.price_varies %}
+                      From {{ product.price_min | money }}
+                    {% else %}
+                      {{ product.price | money }}
+                    {% endif %}
+                  </p>
+                {% endif %}
+              </div>
+
+              <div class="ai-addon-actions-{{ ai_gen_id }}">
+                <button
+                  type="button"
+                  class="ai-addon-button-{{ ai_gen_id }}"
+                  data-add-button
+                  data-product-id="{{ product.id }}"
+                  data-product-title="{{ product.title | escape }}"
+                  data-product-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 200 }}{% endif %}"
+                  data-product-variants='{{ product.variants | json | escape }}'
+                  data-has-multiple-variants="{% if product.variants.size > 1 %}true{% else %}false{% endif %}"
+                >
+                  {{ block.settings.button_text }}
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="ai-addon-empty-state-{{ ai_gen_id }}">
+          <p>No products found in this collection.</p>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="ai-addon-empty-state-{{ ai_gen_id }}">
+        <p>Select a collection to display add-on products.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="ai-addon-modal-overlay-{{ ai_gen_id }}" data-modal-overlay>
+    <div class="ai-addon-modal-{{ ai_gen_id }}" data-modal>
+      <div class="ai-addon-modal-header-{{ ai_gen_id }}">
+        <h3 class="ai-addon-modal-title-{{ ai_gen_id }}">Select Options</h3>
+        <button
+          type="button"
+          class="ai-addon-modal-close-{{ ai_gen_id }}"
+          data-modal-close
+          aria-label="Close modal"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="ai-addon-modal-body-{{ ai_gen_id }}">
+        <div class="ai-addon-modal-product-info-{{ ai_gen_id }}">
+          <div data-modal-image-container></div>
+          <div class="ai-addon-modal-product-details-{{ ai_gen_id }}">
+            <h4 class="ai-addon-modal-product-title-{{ ai_gen_id }}" data-modal-product-title></h4>
+            <p class="ai-addon-modal-product-price-{{ ai_gen_id }}" data-modal-product-price></p>
+          </div>
+        </div>
+
+        <p class="ai-addon-modal-variants-label-{{ ai_gen_id }}">Choose an option:</p>
+        <div class="ai-addon-modal-variants-{{ ai_gen_id }}" data-modal-variants></div>
+      </div>
+
+      <div class="ai-addon-modal-footer-{{ ai_gen_id }}">
+        <button
+          type="button"
+          class="ai-addon-modal-add-button-{{ ai_gen_id }}"
+          data-modal-add-to-cart
+          disabled
+        >
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+</addon-list-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class AddonList{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.selectedVariantId = null;
+      }
+
+      connectedCallback() {
+        this.modalOverlay = this.querySelector('[data-modal-overlay]');
+        this.modal = this.querySelector('[data-modal]');
+        this.modalClose = this.querySelector('[data-modal-close]');
+        this.modalProductTitle = this.querySelector('[data-modal-product-title]');
+        this.modalProductPrice = this.querySelector('[data-modal-product-price]');
+        this.modalImageContainer = this.querySelector('[data-modal-image-container]');
+        this.modalVariantsContainer = this.querySelector('[data-modal-variants]');
+        this.modalAddButton = this.querySelector('[data-modal-add-to-cart]');
+        this.addButtons = this.querySelectorAll('[data-add-button]');
+
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.addButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const hasMultipleVariants = button.getAttribute('data-has-multiple-variants') === 'true';
+            const variantsJson = button.getAttribute('data-product-variants');
+            const variants = JSON.parse(variantsJson);
+
+            if (hasMultipleVariants) {
+              const productTitle = button.getAttribute('data-product-title');
+              const productImage = button.getAttribute('data-product-image');
+              this.openModal(productTitle, productImage, variants);
+            } else {
+              const variantId = variants[0].id;
+              this.addToCart(variantId, button);
+            }
+          });
+        });
+
+        this.modalClose.addEventListener('click', () => {
+          this.closeModal();
+        });
+
+        this.modalOverlay.addEventListener('click', (event) => {
+          if (event.target === this.modalOverlay) {
+            this.closeModal();
+          }
+        });
+
+        this.modalAddButton.addEventListener('click', () => {
+          if (this.selectedVariantId) {
+            this.addToCart(this.selectedVariantId, this.modalAddButton);
+          }
+        });
+
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && this.modalOverlay.classList.contains('active')) {
+            this.closeModal();
+          }
+        });
+      }
+
+      openModal(productTitle, productImage, variants) {
+        this.modalProductTitle.textContent = productTitle;
+        
+        if (productImage) {
+          this.modalImageContainer.innerHTML = `<img src="${productImage}" alt="${productTitle}" class="ai-addon-modal-image-{{ ai_gen_id }}" />`;
+        } else {
+          this.modalImageContainer.innerHTML = `<div class="ai-addon-modal-image-placeholder-{{ ai_gen_id }}">${'{{ "product-1" | placeholder_svg_tag }}'}</div>`;
+        }
+
+        this.renderVariants(variants);
+        
+        this.modalOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      closeModal() {
+        this.modalOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+        this.selectedVariantId = null;
+        this.modalAddButton.disabled = true;
+      }
+
+      renderVariants(variants) {
+        this.modalVariantsContainer.innerHTML = '';
+        
+        variants.forEach((variant, index) => {
+          const variantColor = this.getColorFromName(variant.title);
+          const isAvailable = variant.available;
+          const isFirst = index === 0;
+
+          const variantOption = document.createElement('div');
+          variantOption.className = `ai-addon-modal-variant-option-{{ ai_gen_id }} ${!isAvailable ? 'disabled' : ''} ${isFirst && isAvailable ? 'selected' : ''}`;
+          variantOption.setAttribute('data-variant-id', variant.id);
+          variantOption.setAttribute('data-variant-price', variant.price);
+          
+          variantOption.innerHTML = `
+            <span class="ai-addon-color-swatch-{{ ai_gen_id }}" style="background-color: ${variantColor};"></span>
+            <span class="ai-addon-modal-variant-text-{{ ai_gen_id }}">${variant.title}${!isAvailable ? ' - Sold out' : ''}</span>
+            <span class="ai-addon-modal-variant-price-{{ ai_gen_id }}">${this.formatPrice(variant.price)}</span>
+          `;
+
+          if (isAvailable) {
+            variantOption.addEventListener('click', () => {
+              this.selectVariant(variant.id, variant.price, variantOption);
+            });
+
+            if (isFirst) {
+              this.selectedVariantId = variant.id;
+              this.modalProductPrice.textContent = this.formatPrice(variant.price);
+              this.modalAddButton.disabled = false;
+            }
+          }
+
+          this.modalVariantsContainer.appendChild(variantOption);
+        });
+      }
+
+      selectVariant(variantId, price, optionElement) {
+        this.selectedVariantId = variantId;
+        
+        this.modalVariantsContainer.querySelectorAll('.ai-addon-modal-variant-option-{{ ai_gen_id }}').forEach((option) => {
+          option.classList.remove('selected');
+        });
+        
+        optionElement.classList.add('selected');
+        this.modalProductPrice.textContent = this.formatPrice(price);
+        this.modalAddButton.disabled = false;
+      }
+
+      getColorFromName(name) {
+        const nameLower = name.toLowerCase();
+        
+        if (nameLower.includes('black')) return '#000000';
+        if (nameLower.includes('white')) return '#ffffff';
+        if (nameLower.includes('red')) return '#ff0000';
+        if (nameLower.includes('blue')) return '#0000ff';
+        if (nameLower.includes('green')) return '#008000';
+        if (nameLower.includes('yellow')) return '#ffff00';
+        if (nameLower.includes('orange')) return '#ffa500';
+        if (nameLower.includes('purple')) return '#800080';
+        if (nameLower.includes('pink')) return '#ffc0cb';
+        if (nameLower.includes('brown')) return '#8b4513';
+        if (nameLower.includes('gray') || nameLower.includes('grey')) return '#808080';
+        if (nameLower.includes('navy')) return '#000080';
+        if (nameLower.includes('teal')) return '#008080';
+        if (nameLower.includes('silver')) return '#c0c0c0';
+        if (nameLower.includes('gold')) return '#ffd700';
+        if (nameLower.includes('beige')) return '#f5f5dc';
+        if (nameLower.includes('tan')) return '#d2b48c';
+        if (nameLower.includes('maroon')) return '#800000';
+        
+        return '#cccccc';
+      }
+
+      formatPrice(priceInCents) {
+        const priceInDollars = parseFloat(priceInCents) / 100;
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(priceInDollars);
+      }
+
+      addToCart(variantId, buttonElement) {
+        const originalText = buttonElement.textContent;
+        buttonElement.textContent = 'Adding...';
+        buttonElement.disabled = true;
+
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: variantId,
+            quantity: 1
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          buttonElement.textContent = 'Added!';
+          
+          setTimeout(() => {
+            if (this.modalOverlay.classList.contains('active')) {
+              this.closeModal();
+            }
+            buttonElement.textContent = originalText;
+            buttonElement.disabled = false;
+          }, 1000);
+
+          if (window.theme && window.theme.cart) {
+            window.theme.cart.refresh();
+          }
+
+          document.dispatchEvent(new CustomEvent('cart:refresh'));
+        })
+        .catch(error => {
+          console.error('Error adding to cart:', error);
+          buttonElement.textContent = 'Error - Try Again';
+          setTimeout(() => {
+            buttonElement.textContent = originalText;
+            buttonElement.disabled = false;
+          }, 2000);
+        });
+      }
+    }
+
+    customElements.define('addon-list-{{ ai_gen_id }}', AddonList{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Gaming essentials add-ons",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title",
+      "label": "Title",
+      "default": "Complete Your Bundle"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "description",
+      "label": "Description",
+      "default": "Add these gaming essentials to enhance your experience"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "range",
+      "id": "product_limit",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "label": "Number of products",
+      "default": 5
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "Show price",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Add to Cart"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_border_color",
+      "label": "Border",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_background",
+      "label": "Hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_text_color",
+      "label": "Hover text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_border_color",
+      "label": "Hover border",
+      "default": "#333333"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Modal"
+    },
+    {
+      "type": "color",
+      "id": "modal_background",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "modal_border_radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "price_color",
+      "label": "Price",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "link_hover_color",
+      "label": "Link hover",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "item_background",
+      "label": "Item background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "item_border_color",
+      "label": "Item border",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "item_hover_border_color",
+      "label": "Item hover border",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Section padding",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "container_padding",
+      "min": 0,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Container padding",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Container border radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "header_spacing",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Header spacing",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "item_spacing",
+      "min": 5,
+      "max": 30,
+      "step": 5,
+      "unit": "px",
+      "label": "Item spacing",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "item_padding",
+      "min": 5,
+      "max": 40,
+      "step": 5,
+      "unit": "px",
+      "label": "Item padding",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "item_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Item border radius",
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Image"
+    },
+    {
+      "type": "range",
+      "id": "image_size",
+      "min": 60,
+      "max": 150,
+      "step": 10,
+      "unit": "px",
+      "label": "Size",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "image_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "min": 16,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Title size",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "description_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Description size",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "product_title_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Product title size",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "price_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Price size",
+      "default": 14
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gaming essentials add-ons"
+    }
+  ]
+}
+{% endschema %}

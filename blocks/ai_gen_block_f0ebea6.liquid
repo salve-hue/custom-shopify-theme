@@ -1,0 +1,1047 @@
+{% doc %}
+  @prompt
+    The app is a Product Customizer Widget placed on the custom playmat product page.Core Functionality: The widget allows the customer to upload an image ($JPG/PNG/TIFF$) and visually crop it to the correct print specifications based on the selected playmat size.Size Options & Canvas: The app must present two crop canvases determined by the selected product variant:24" x 14" Mat: The crop canvas must be 24.5" x 14.5" to include the required 0.25" bleed on all sides. The aspect ratio is 49:29.28" x 14" Mat: The crop canvas must be 28.5" x 14.5" to include the required 0.25" bleed on all sides. The aspect ratio is 57:29.Visual Guide: The cropping tool must display a visual overlay (guide lines) representing the 1-inch "Safe Zone" inside the final trimmed edge, ensuring customers keep important content inside this boundary.Output: The final, cropped, and flattened image file must be attached to the cart item as a file upload. The selected playmat size (24" or 28") must be captured as a line item property on the product added to the cart.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-playmat-customizer-{{ ai_gen_id }} {
+    padding: 40px 20px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .ai-playmat-customizer__heading-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.heading_size }}px;
+    margin: 0 0 24px;
+    text-align: center;
+  }
+
+  .ai-playmat-customizer__description-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 14px;
+    margin: 0 0 32px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .ai-playmat-customizer__size-selector-{{ ai_gen_id }} {
+    margin-bottom: 32px;
+  }
+
+  .ai-playmat-customizer__size-label-{{ ai_gen_id }} {
+    display: block;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+
+  .ai-playmat-customizer__size-options-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ai-playmat-customizer__size-option-{{ ai_gen_id }} {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .ai-playmat-customizer__size-radio-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-playmat-customizer__size-button-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    padding: 16px 20px;
+    background-color: {{ block.settings.option_bg_color }};
+    color: {{ block.settings.option_text_color }};
+    border: 2px solid {{ block.settings.option_border_color }};
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .ai-playmat-customizer__size-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.option_hover_bg_color }};
+    border-color: {{ block.settings.option_hover_border_color }};
+  }
+
+  .ai-playmat-customizer__size-radio-{{ ai_gen_id }}:checked + .ai-playmat-customizer__size-button-{{ ai_gen_id }} {
+    background-color: {{ block.settings.option_selected_bg_color }};
+    color: {{ block.settings.option_selected_text_color }};
+    border-color: {{ block.settings.option_selected_border_color }};
+  }
+
+  .ai-playmat-customizer__size-details-{{ ai_gen_id }} {
+    font-size: 12px;
+    margin-top: 4px;
+    opacity: 0.8;
+  }
+
+  .ai-playmat-customizer__upload-section-{{ ai_gen_id }} {
+    margin-bottom: 32px;
+  }
+
+  .ai-playmat-customizer__upload-label-{{ ai_gen_id }} {
+    display: block;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+
+  .ai-playmat-customizer__upload-area-{{ ai_gen_id }} {
+    border: 2px dashed {{ block.settings.upload_border_color }};
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: {{ block.settings.upload_bg_color }};
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .ai-playmat-customizer__upload-area-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.upload_hover_border_color }};
+    background-color: {{ block.settings.upload_hover_bg_color }};
+  }
+
+  .ai-playmat-customizer__upload-icon-{{ ai_gen_id }} {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.6;
+  }
+
+  .ai-playmat-customizer__upload-text-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .ai-playmat-customizer__upload-hint-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 12px;
+    opacity: 0.7;
+  }
+
+  .ai-playmat-customizer__upload-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-playmat-customizer__crop-section-{{ ai_gen_id }} {
+    display: none;
+    margin-bottom: 32px;
+  }
+
+  .ai-playmat-customizer__crop-section-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-playmat-customizer__crop-label-{{ ai_gen_id }} {
+    display: block;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+
+  .ai-playmat-customizer__crop-container-{{ ai_gen_id }} {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto 20px;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ai-playmat-customizer__crop-canvas-{{ ai_gen_id }} {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    cursor: move;
+  }
+
+  .ai-playmat-customizer__safe-zone-overlay-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }} {
+    position: absolute;
+    background-color: {{ block.settings.safe_zone_color }};
+    opacity: 0.8;
+  }
+
+  .ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }}.top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }}.bottom {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }}.left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
+  }
+
+  .ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }}.right {
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 2px;
+  }
+
+  .ai-playmat-customizer__crop-controls-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .ai-playmat-customizer__zoom-control-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ai-playmat-customizer__zoom-label-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .ai-playmat-customizer__zoom-slider-{{ ai_gen_id }} {
+    width: 200px;
+  }
+
+  .ai-playmat-customizer__zoom-value-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 14px;
+    min-width: 50px;
+  }
+
+  .ai-playmat-customizer__control-button-{{ ai_gen_id }} {
+    padding: 10px 20px;
+    background-color: {{ block.settings.button_secondary_bg }};
+    color: {{ block.settings.button_secondary_text }};
+    border: 1px solid {{ block.settings.button_secondary_border }};
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .ai-playmat-customizer__control-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_secondary_hover_bg }};
+  }
+
+  .ai-playmat-customizer__info-box-{{ ai_gen_id }} {
+    background-color: {{ block.settings.info_bg_color }};
+    border: 1px solid {{ block.settings.info_border_color }};
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ai-playmat-customizer__info-title-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .ai-playmat-customizer__info-text-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .ai-playmat-customizer__actions-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .ai-playmat-customizer__button-{{ ai_gen_id }} {
+    padding: 16px 32px;
+    background-color: {{ block.settings.button_bg_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .ai-playmat-customizer__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_bg_color }};
+  }
+
+  .ai-playmat-customizer__button-{{ ai_gen_id }}:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ai-playmat-customizer__error-{{ ai_gen_id }} {
+    color: {{ block.settings.error_color }};
+    background-color: {{ block.settings.error_bg_color }};
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    display: none;
+  }
+
+  .ai-playmat-customizer__error-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-playmat-customizer-{{ ai_gen_id }} {
+      padding: 24px 16px;
+    }
+
+    .ai-playmat-customizer__heading-{{ ai_gen_id }} {
+      font-size: {{ block.settings.heading_size | times: 0.7 }}px;
+    }
+
+    .ai-playmat-customizer__size-option-{{ ai_gen_id }} {
+      min-width: 100%;
+    }
+
+    .ai-playmat-customizer__zoom-slider-{{ ai_gen_id }} {
+      width: 150px;
+    }
+  }
+{% endstyle %}
+
+<playmat-customizer-{{ ai_gen_id }}
+  class="ai-playmat-customizer-{{ ai_gen_id }}"
+  data-product-id="{{ product.id }}"
+  {{ block.shopify_attributes }}
+>
+  <h2 class="ai-playmat-customizer__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+  
+  {% if block.settings.description != blank %}
+    <div class="ai-playmat-customizer__description-{{ ai_gen_id }}">
+      {{ block.settings.description }}
+    </div>
+  {% endif %}
+
+  <div class="ai-playmat-customizer__error-{{ ai_gen_id }}" role="alert"></div>
+
+  <div class="ai-playmat-customizer__size-selector-{{ ai_gen_id }}">
+    <label class="ai-playmat-customizer__size-label-{{ ai_gen_id }}">
+      Select Playmat Size
+    </label>
+    <div class="ai-playmat-customizer__size-options-{{ ai_gen_id }}">
+      <div class="ai-playmat-customizer__size-option-{{ ai_gen_id }}">
+        <input
+          type="radio"
+          id="size-24-{{ ai_gen_id }}"
+          name="playmat-size-{{ ai_gen_id }}"
+          value="24"
+          class="ai-playmat-customizer__size-radio-{{ ai_gen_id }}"
+          checked
+        >
+        <label
+          for="size-24-{{ ai_gen_id }}"
+          class="ai-playmat-customizer__size-button-{{ ai_gen_id }}"
+        >
+          24" x 14" Mat
+          <div class="ai-playmat-customizer__size-details-{{ ai_gen_id }}">
+            Crop area: 24.5" x 14.5" (with bleed)
+          </div>
+        </label>
+      </div>
+      <div class="ai-playmat-customizer__size-option-{{ ai_gen_id }}">
+        <input
+          type="radio"
+          id="size-28-{{ ai_gen_id }}"
+          name="playmat-size-{{ ai_gen_id }}"
+          value="28"
+          class="ai-playmat-customizer__size-radio-{{ ai_gen_id }}"
+        >
+        <label
+          for="size-28-{{ ai_gen_id }}"
+          class="ai-playmat-customizer__size-button-{{ ai_gen_id }}"
+        >
+          28" x 14" Mat
+          <div class="ai-playmat-customizer__size-details-{{ ai_gen_id }}">
+            Crop area: 28.5" x 14.5" (with bleed)
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-playmat-customizer__upload-section-{{ ai_gen_id }}">
+    <label class="ai-playmat-customizer__upload-label-{{ ai_gen_id }}">
+      Upload Your Image
+    </label>
+    <div class="ai-playmat-customizer__upload-area-{{ ai_gen_id }}">
+      <svg
+        class="ai-playmat-customizer__upload-icon-{{ ai_gen_id }}"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+        />
+      </svg>
+      <div class="ai-playmat-customizer__upload-text-{{ ai_gen_id }}">
+        Click to upload or drag and drop
+      </div>
+      <div class="ai-playmat-customizer__upload-hint-{{ ai_gen_id }}">
+        JPG, PNG, or TIFF (Max 20MB)
+      </div>
+      <input
+        type="file"
+        accept=".jpg,.jpeg,.png,.tiff,.tif"
+        class="ai-playmat-customizer__upload-input-{{ ai_gen_id }}"
+      >
+    </div>
+  </div>
+
+  <div class="ai-playmat-customizer__crop-section-{{ ai_gen_id }}">
+    <label class="ai-playmat-customizer__crop-label-{{ ai_gen_id }}">
+      Adjust Your Image
+    </label>
+
+    <div class="ai-playmat-customizer__info-box-{{ ai_gen_id }}">
+      <div class="ai-playmat-customizer__info-title-{{ ai_gen_id }}">
+        Safe Zone Guide
+      </div>
+      <p class="ai-playmat-customizer__info-text-{{ ai_gen_id }}">
+        The dashed lines show the 1-inch safe zone. Keep important content (text, logos, etc.) inside this area to ensure they won't be cut off during trimming.
+      </p>
+    </div>
+
+    <div class="ai-playmat-customizer__crop-container-{{ ai_gen_id }}">
+      <canvas class="ai-playmat-customizer__crop-canvas-{{ ai_gen_id }}"></canvas>
+      <div class="ai-playmat-customizer__safe-zone-overlay-{{ ai_gen_id }}">
+        <div class="ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }} top"></div>
+        <div class="ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }} bottom"></div>
+        <div class="ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }} left"></div>
+        <div class="ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }} right"></div>
+      </div>
+    </div>
+
+    <div class="ai-playmat-customizer__crop-controls-{{ ai_gen_id }}">
+      <div class="ai-playmat-customizer__zoom-control-{{ ai_gen_id }}">
+        <label class="ai-playmat-customizer__zoom-label-{{ ai_gen_id }}">Zoom:</label>
+        <input
+          type="range"
+          min="100"
+          max="300"
+          value="100"
+          class="ai-playmat-customizer__zoom-slider-{{ ai_gen_id }}"
+        >
+        <span class="ai-playmat-customizer__zoom-value-{{ ai_gen_id }}">100%</span>
+      </div>
+      <button
+        type="button"
+        class="ai-playmat-customizer__control-button-{{ ai_gen_id }}"
+        data-action="reset"
+      >
+        Reset Position
+      </button>
+    </div>
+  </div>
+
+  <div class="ai-playmat-customizer__actions-{{ ai_gen_id }}">
+    <button
+      type="button"
+      class="ai-playmat-customizer__button-{{ ai_gen_id }}"
+      data-action="add-to-cart"
+      disabled
+    >
+      Add to Cart
+    </button>
+  </div>
+</playmat-customizer-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class PlaymatCustomizer{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.selectedSize = '24';
+        this.uploadedImage = null;
+        this.canvas = null;
+        this.ctx = null;
+        this.imageData = {
+          img: null,
+          x: 0,
+          y: 0,
+          scale: 1,
+          isDragging: false,
+          dragStartX: 0,
+          dragStartY: 0
+        };
+        this.canvasSpecs = {
+          '24': { width: 24.5, height: 14.5, aspectRatio: 49 / 29 },
+          '28': { width: 28.5, height: 14.5, aspectRatio: 57 / 29 }
+        };
+        this.safeZoneInches = 1;
+        this.croppedBlob = null;
+      }
+
+      connectedCallback() {
+        this.canvas = this.querySelector('.ai-playmat-customizer__crop-canvas-{{ ai_gen_id }}');
+        this.ctx = this.canvas.getContext('2d');
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        const sizeRadios = this.querySelectorAll('.ai-playmat-customizer__size-radio-{{ ai_gen_id }}');
+        sizeRadios.forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            this.selectedSize = e.target.value;
+            if (this.uploadedImage) {
+              this.initializeCanvas();
+            }
+          });
+        });
+
+        const uploadArea = this.querySelector('.ai-playmat-customizer__upload-area-{{ ai_gen_id }}');
+        const uploadInput = this.querySelector('.ai-playmat-customizer__upload-input-{{ ai_gen_id }}');
+
+        uploadArea.addEventListener('click', () => uploadInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          uploadArea.style.borderColor = '{{ block.settings.upload_hover_border_color }}';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+          uploadArea.style.borderColor = '{{ block.settings.upload_border_color }}';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          uploadArea.style.borderColor = '{{ block.settings.upload_border_color }}';
+          const file = e.dataTransfer.files[0];
+          if (file) {
+            this.handleFileUpload(file);
+          }
+        });
+
+        uploadInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            this.handleFileUpload(file);
+          }
+        });
+
+        const zoomSlider = this.querySelector('.ai-playmat-customizer__zoom-slider-{{ ai_gen_id }}');
+        zoomSlider.addEventListener('input', (e) => {
+          const zoomValue = parseInt(e.target.value);
+          this.imageData.scale = zoomValue / 100;
+          this.querySelector('.ai-playmat-customizer__zoom-value-{{ ai_gen_id }}').textContent = zoomValue + '%';
+          this.drawCanvas();
+        });
+
+        const resetButton = this.querySelector('[data-action="reset"]');
+        resetButton.addEventListener('click', () => {
+          this.imageData.x = 0;
+          this.imageData.y = 0;
+          this.imageData.scale = 1;
+          zoomSlider.value = 100;
+          this.querySelector('.ai-playmat-customizer__zoom-value-{{ ai_gen_id }}').textContent = '100%';
+          this.drawCanvas();
+        });
+
+        this.canvas.addEventListener('mousedown', (e) => this.startDrag(e));
+        this.canvas.addEventListener('mousemove', (e) => this.drag(e));
+        this.canvas.addEventListener('mouseup', () => this.endDrag());
+        this.canvas.addEventListener('mouseleave', () => this.endDrag());
+
+        this.canvas.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]));
+        this.canvas.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          this.drag(e.touches[0]);
+        });
+        this.canvas.addEventListener('touchend', () => this.endDrag());
+
+        const addToCartButton = this.querySelector('[data-action="add-to-cart"]');
+        addToCartButton.addEventListener('click', () => this.addToCart());
+      }
+
+      handleFileUpload(file) {
+        const validTypes = ['image/jpeg', 'image/png', 'image/tiff'];
+        const maxSize = 20 * 1024 * 1024;
+
+        if (!validTypes.includes(file.type)) {
+          this.showError('Please upload a JPG, PNG, or TIFF file.');
+          return;
+        }
+
+        if (file.size > maxSize) {
+          this.showError('File size must be less than 20MB.');
+          return;
+        }
+
+        this.hideError();
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            this.uploadedImage = img;
+            this.initializeCanvas();
+            this.querySelector('.ai-playmat-customizer__crop-section-{{ ai_gen_id }}').classList.add('active');
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      initializeCanvas() {
+        const spec = this.canvasSpecs[this.selectedSize];
+        const displayWidth = Math.min(800, this.canvas.parentElement.clientWidth);
+        const displayHeight = displayWidth / spec.aspectRatio;
+
+        this.canvas.width = displayWidth * 2;
+        this.canvas.height = displayHeight * 2;
+        this.canvas.style.width = displayWidth + 'px';
+        this.canvas.style.height = displayHeight + 'px';
+
+        this.imageData.img = this.uploadedImage;
+        this.imageData.x = 0;
+        this.imageData.y = 0;
+        this.imageData.scale = 1;
+
+        this.updateSafeZoneOverlay();
+        this.drawCanvas();
+
+        this.querySelector('[data-action="add-to-cart"]').disabled = false;
+      }
+
+      updateSafeZoneOverlay() {
+        const spec = this.canvasSpecs[this.selectedSize];
+        const safeZonePercent = (this.safeZoneInches / spec.width) * 100;
+        const safeZonePercentHeight = (this.safeZoneInches / spec.height) * 100;
+
+        const overlay = this.querySelector('.ai-playmat-customizer__safe-zone-overlay-{{ ai_gen_id }}');
+        const lines = overlay.querySelectorAll('.ai-playmat-customizer__safe-zone-line-{{ ai_gen_id }}');
+
+        lines.forEach(line => {
+          if (line.classList.contains('top')) {
+            line.style.top = safeZonePercentHeight + '%';
+          } else if (line.classList.contains('bottom')) {
+            line.style.bottom = safeZonePercentHeight + '%';
+          } else if (line.classList.contains('left')) {
+            line.style.left = safeZonePercent + '%';
+          } else if (line.classList.contains('right')) {
+            line.style.right = safeZonePercent + '%';
+          }
+        });
+      }
+
+      drawCanvas() {
+        if (!this.imageData.img) return;
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const img = this.imageData.img;
+        const canvasAspect = this.canvas.width / this.canvas.height;
+        const imgAspect = img.width / img.height;
+
+        let drawWidth, drawHeight;
+        if (imgAspect > canvasAspect) {
+          drawHeight = this.canvas.height * this.imageData.scale;
+          drawWidth = drawHeight * imgAspect;
+        } else {
+          drawWidth = this.canvas.width * this.imageData.scale;
+          drawHeight = drawWidth / imgAspect;
+        }
+
+        const x = this.imageData.x + (this.canvas.width - drawWidth) / 2;
+        const y = this.imageData.y + (this.canvas.height - drawHeight) / 2;
+
+        this.ctx.drawImage(img, x, y, drawWidth, drawHeight);
+      }
+
+      startDrag(e) {
+        this.imageData.isDragging = true;
+        const rect = this.canvas.getBoundingClientRect();
+        this.imageData.dragStartX = (e.clientX - rect.left) * 2 - this.imageData.x;
+        this.imageData.dragStartY = (e.clientY - rect.top) * 2 - this.imageData.y;
+      }
+
+      drag(e) {
+        if (!this.imageData.isDragging) return;
+
+        const rect = this.canvas.getBoundingClientRect();
+        this.imageData.x = (e.clientX - rect.left) * 2 - this.imageData.dragStartX;
+        this.imageData.y = (e.clientY - rect.top) * 2 - this.imageData.dragStartY;
+
+        this.drawCanvas();
+      }
+
+      endDrag() {
+        this.imageData.isDragging = false;
+      }
+
+      async getCroppedImage() {
+        const spec = this.canvasSpecs[this.selectedSize];
+        const dpi = 300;
+        const finalWidth = spec.width * dpi;
+        const finalHeight = spec.height * dpi;
+
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = finalWidth;
+        finalCanvas.height = finalHeight;
+        const finalCtx = finalCanvas.getContext('2d');
+
+        const scaleX = finalWidth / this.canvas.width;
+        const scaleY = finalHeight / this.canvas.height;
+
+        const img = this.imageData.img;
+        const canvasAspect = this.canvas.width / this.canvas.height;
+        const imgAspect = img.width / img.height;
+
+        let drawWidth, drawHeight;
+        if (imgAspect > canvasAspect) {
+          drawHeight = this.canvas.height * this.imageData.scale;
+          drawWidth = drawHeight * imgAspect;
+        } else {
+          drawWidth = this.canvas.width * this.imageData.scale;
+          drawHeight = drawWidth / imgAspect;
+        }
+
+        const x = this.imageData.x + (this.canvas.width - drawWidth) / 2;
+        const y = this.imageData.y + (this.canvas.height - drawHeight) / 2;
+
+        finalCtx.drawImage(
+          img,
+          x * scaleX,
+          y * scaleY,
+          drawWidth * scaleX,
+          drawHeight * scaleY
+        );
+
+        return new Promise((resolve) => {
+          finalCanvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', 0.95);
+        });
+      }
+
+      async addToCart() {
+        const addButton = this.querySelector('[data-action="add-to-cart"]');
+        addButton.disabled = true;
+        addButton.textContent = 'Processing...';
+
+        try {
+          const croppedBlob = await this.getCroppedImage();
+          
+          const formData = new FormData();
+          formData.append('id', this.dataset.productId);
+          formData.append('quantity', '1');
+          formData.append('properties[Playmat Size]', this.selectedSize + '" x 14"');
+          formData.append('properties[_custom_image]', croppedBlob, 'custom-playmat.jpg');
+
+          const response = await fetch('/cart/add.js', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (response.ok) {
+            window.location.href = '/cart';
+          } else {
+            throw new Error('Failed to add to cart');
+          }
+        } catch (error) {
+          this.showError('Failed to add to cart. Please try again.');
+          addButton.disabled = false;
+          addButton.textContent = 'Add to Cart';
+        }
+      }
+
+      showError(message) {
+        const errorBox = this.querySelector('.ai-playmat-customizer__error-{{ ai_gen_id }}');
+        errorBox.textContent = message;
+        errorBox.classList.add('active');
+      }
+
+      hideError() {
+        const errorBox = this.querySelector('.ai-playmat-customizer__error-{{ ai_gen_id }}');
+        errorBox.classList.remove('active');
+      }
+    }
+
+    customElements.define('playmat-customizer-{{ ai_gen_id }}', PlaymatCustomizer{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Playmat customizer",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Customize Your Playmat"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Upload your image and adjust it to fit your playmat. The tool will automatically add the required bleed area for printing."
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "safe_zone_color",
+      "label": "Safe zone guide",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Size options"
+    },
+    {
+      "type": "color",
+      "id": "option_bg_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "option_text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "option_border_color",
+      "label": "Border",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "option_hover_bg_color",
+      "label": "Hover background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "option_hover_border_color",
+      "label": "Hover border",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "option_selected_bg_color",
+      "label": "Selected background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "option_selected_text_color",
+      "label": "Selected text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "option_selected_border_color",
+      "label": "Selected border",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Upload area"
+    },
+    {
+      "type": "color",
+      "id": "upload_bg_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "upload_border_color",
+      "label": "Border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "upload_hover_bg_color",
+      "label": "Hover background",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "upload_hover_border_color",
+      "label": "Hover border",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Info box"
+    },
+    {
+      "type": "color",
+      "id": "info_bg_color",
+      "label": "Background",
+      "default": "#e1edf5"
+    },
+    {
+      "type": "color",
+      "id": "info_border_color",
+      "label": "Border",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Primary button"
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_bg_color",
+      "label": "Hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "header",
+      "content": "Secondary button"
+    },
+    {
+      "type": "color",
+      "id": "button_secondary_bg",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_secondary_text",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_secondary_border",
+      "label": "Border",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_secondary_hover_bg",
+      "label": "Hover background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "header",
+      "content": "Error messages"
+    },
+    {
+      "type": "color",
+      "id": "error_color",
+      "label": "Text",
+      "default": "#D82C0D"
+    },
+    {
+      "type": "color",
+      "id": "error_bg_color",
+      "label": "Background",
+      "default": "#ffe6e6"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 20,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    }
+  ],
+  "presets": [
+    {
+      "name": "Playmat customizer"
+    }
+  ]
+}
+{% endschema %}

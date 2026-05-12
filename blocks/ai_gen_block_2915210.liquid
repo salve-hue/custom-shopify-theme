@@ -1,0 +1,445 @@
+{% doc %}
+  @prompt
+    An announcement bar with customizable color schemes, sizes, and an X in the right corner so users can close it if they wish. I want the text to be customizable with the options of linking it to pages or collections. Also, it should have the ability to cycle through announcements if I choose to do so., It should have the option to run it the full length of the page or adjust it shorter.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-announcement-bar-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    background-color: {{ block.settings.background_color }};
+    color: {{ block.settings.text_color }};
+    padding: {{ block.settings.padding_vertical }}px 0;
+    text-align: {{ block.settings.text_alignment }};
+    overflow: hidden;
+  }
+
+  .ai-announcement-bar-container-{{ ai_gen_id }} {
+    {% if block.settings.container_width == 'full' %}
+      max-width: 100%;
+      padding: 0 {{ block.settings.padding_horizontal }}px;
+    {% elsif block.settings.container_width == 'page' %}
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 {{ block.settings.padding_horizontal }}px;
+    {% else %}
+      max-width: {{ block.settings.custom_width }}px;
+      margin: 0 auto;
+      padding: 0 {{ block.settings.padding_horizontal }}px;
+    {% endif %}
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ai-announcement-bar-content-{{ ai_gen_id }} {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: {{ block.settings.text_alignment }};
+    padding-right: 40px;
+  }
+
+  .ai-announcement-bar-message-{{ ai_gen_id }} {
+    font-size: {{ block.settings.font_size }}px;
+    line-height: 1.4;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  .ai-announcement-bar-message-{{ ai_gen_id }}.active {
+    opacity: 1;
+  }
+
+  .ai-announcement-bar-message-{{ ai_gen_id }} a {
+    color: {{ block.settings.link_color }};
+    text-decoration: underline;
+  }
+
+  .ai-announcement-bar-message-{{ ai_gen_id }} a:hover {
+    color: {{ block.settings.link_hover_color }};
+  }
+
+  .ai-announcement-bar-close-{{ ai_gen_id }} {
+    position: absolute;
+    right: {{ block.settings.padding_horizontal }}px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: {{ block.settings.text_color }};
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+  }
+
+  .ai-announcement-bar-close-{{ ai_gen_id }}:hover {
+    opacity: 1;
+  }
+
+  .ai-announcement-bar-close-{{ ai_gen_id }} svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ai-announcement-bar-{{ ai_gen_id }}.hidden {
+    display: none;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-announcement-bar-{{ ai_gen_id }} {
+      padding: {{ block.settings.padding_vertical | times: 0.8 }}px 0;
+    }
+
+    .ai-announcement-bar-container-{{ ai_gen_id }} {
+      padding: 0 {{ block.settings.padding_horizontal | times: 0.8 }}px;
+    }
+
+    .ai-announcement-bar-message-{{ ai_gen_id }} {
+      font-size: {{ block.settings.font_size | times: 0.9 }}px;
+    }
+
+    .ai-announcement-bar-close-{{ ai_gen_id }} {
+      right: {{ block.settings.padding_horizontal | times: 0.8 }}px;
+    }
+  }
+{% endstyle %}
+
+<announcement-bar-{{ ai_gen_id }}
+  class="ai-announcement-bar-{{ ai_gen_id }}"
+  data-auto-rotate="{{ block.settings.auto_rotate }}"
+  data-rotation-speed="{{ block.settings.rotation_speed }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-announcement-bar-container-{{ ai_gen_id }}">
+    <div class="ai-announcement-bar-content-{{ ai_gen_id }}">
+      {% if block.settings.message_1 != blank %}
+        <div
+          class="ai-announcement-bar-message-{{ ai_gen_id }} active"
+          data-message-index="0"
+        >
+          {% if block.settings.link_1 != blank %}
+            <a href="{{ block.settings.link_1 }}">{{ block.settings.message_1 }}</a>
+          {% else %}
+            {{ block.settings.message_1 }}
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if block.settings.message_2 != blank %}
+        <div
+          class="ai-announcement-bar-message-{{ ai_gen_id }}"
+          data-message-index="1"
+        >
+          {% if block.settings.link_2 != blank %}
+            <a href="{{ block.settings.link_2 }}">{{ block.settings.message_2 }}</a>
+          {% else %}
+            {{ block.settings.message_2 }}
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if block.settings.message_3 != blank %}
+        <div
+          class="ai-announcement-bar-message-{{ ai_gen_id }}"
+          data-message-index="2"
+        >
+          {% if block.settings.link_3 != blank %}
+            <a href="{{ block.settings.link_3 }}">{{ block.settings.message_3 }}</a>
+          {% else %}
+            {{ block.settings.message_3 }}
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    {% if block.settings.show_close_button %}
+      <button
+        class="ai-announcement-bar-close-{{ ai_gen_id }}"
+        aria-label="Close announcement"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    {% endif %}
+  </div>
+</announcement-bar-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class AnnouncementBar{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.messages = [];
+        this.currentIndex = 0;
+        this.rotationInterval = null;
+      }
+
+      connectedCallback() {
+        this.messages = Array.from(
+          this.querySelectorAll('.ai-announcement-bar-message-{{ ai_gen_id }}')
+        );
+        this.closeButton = this.querySelector('.ai-announcement-bar-close-{{ ai_gen_id }}');
+        this.autoRotate = this.dataset.autoRotate === 'true';
+        this.rotationSpeed = parseInt(this.dataset.rotationSpeed) * 1000;
+
+        if (this.closeButton) {
+          this.closeButton.addEventListener('click', () => this.close());
+        }
+
+        if (this.autoRotate && this.messages.length > 1) {
+          this.startRotation();
+        }
+
+        this.checkIfClosed();
+      }
+
+      disconnectedCallback() {
+        if (this.rotationInterval) {
+          clearInterval(this.rotationInterval);
+        }
+      }
+
+      startRotation() {
+        this.rotationInterval = setInterval(() => {
+          this.rotateMessage();
+        }, this.rotationSpeed);
+      }
+
+      rotateMessage() {
+        this.messages[this.currentIndex].classList.remove('active');
+        this.currentIndex = (this.currentIndex + 1) % this.messages.length;
+        this.messages[this.currentIndex].classList.add('active');
+      }
+
+      close() {
+        this.classList.add('hidden');
+        localStorage.setItem('announcement-bar-{{ ai_gen_id }}-closed', 'true');
+      }
+
+      checkIfClosed() {
+        const isClosed = localStorage.getItem('announcement-bar-{{ ai_gen_id }}-closed');
+        if (isClosed === 'true') {
+          this.classList.add('hidden');
+        }
+      }
+    }
+
+    customElements.define('announcement-bar-{{ ai_gen_id }}', AnnouncementBar{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Announcement bar",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Message 1"
+    },
+    {
+      "type": "text",
+      "id": "message_1",
+      "label": "Message",
+      "default": "Welcome to our store!"
+    },
+    {
+      "type": "url",
+      "id": "link_1",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Message 2"
+    },
+    {
+      "type": "text",
+      "id": "message_2",
+      "label": "Message"
+    },
+    {
+      "type": "url",
+      "id": "link_2",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Message 3"
+    },
+    {
+      "type": "text",
+      "id": "message_3",
+      "label": "Message"
+    },
+    {
+      "type": "url",
+      "id": "link_3",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Rotation settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_rotate",
+      "label": "Auto-rotate messages",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "rotation_speed",
+      "min": 3,
+      "max": 15,
+      "step": 1,
+      "unit": "s",
+      "label": "Rotation speed",
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "container_width",
+      "label": "Width",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "page",
+          "label": "Page width"
+        },
+        {
+          "value": "custom",
+          "label": "Custom"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "min": 600,
+      "max": 1600,
+      "step": 50,
+      "unit": "px",
+      "label": "Custom width",
+      "default": 1000
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Link",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "link_hover_color",
+      "label": "Link hover",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Font size",
+      "default": 14
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "flex-end",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "padding_vertical",
+      "min": 8,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Vertical padding",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "padding_horizontal",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Horizontal padding",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Close button"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_close_button",
+      "label": "Show close button",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Announcement bar"
+    }
+  ]
+}
+{% endschema %}

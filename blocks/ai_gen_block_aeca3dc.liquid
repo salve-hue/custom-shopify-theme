@@ -1,0 +1,335 @@
+{% doc %}
+  @prompt
+    Create two rectangulat box buttons, with customizable text and colors, side by side. One will say Image Guides and create an icon with it. The second will be Contact Form and create an icon with that one.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-button-container-{{ ai_gen_id }} {
+    display: flex;
+    gap: {{ block.settings.gap }}px;
+    justify-content: {{ block.settings.alignment }};
+    flex-wrap: wrap;
+  }
+
+  .ai-button-box-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: {{ block.settings.padding }}px;
+    background-color: {{ block.settings.button_1_bg_color }};
+    border: {{ block.settings.border_width }}px solid {{ block.settings.button_1_border_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    min-width: {{ block.settings.button_width }}px;
+    cursor: pointer;
+  }
+
+  .ai-button-box-{{ ai_gen_id }}:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .ai-button-box-{{ ai_gen_id }}--1 {
+    background-color: {{ block.settings.button_1_bg_color }};
+    border-color: {{ block.settings.button_1_border_color }};
+  }
+
+  .ai-button-box-{{ ai_gen_id }}--1:hover {
+    background-color: {{ block.settings.button_1_hover_bg_color }};
+  }
+
+  .ai-button-box-{{ ai_gen_id }}--2 {
+    background-color: {{ block.settings.button_2_bg_color }};
+    border-color: {{ block.settings.button_2_border_color }};
+  }
+
+  .ai-button-box-{{ ai_gen_id }}--2:hover {
+    background-color: {{ block.settings.button_2_hover_bg_color }};
+  }
+
+  .ai-button-icon-{{ ai_gen_id }} {
+    width: {{ block.settings.icon_size }}px;
+    height: {{ block.settings.icon_size }}px;
+    flex-shrink: 0;
+  }
+
+  .ai-button-icon-{{ ai_gen_id }}--1 {
+    color: {{ block.settings.button_1_icon_color }};
+  }
+
+  .ai-button-icon-{{ ai_gen_id }}--2 {
+    color: {{ block.settings.button_2_icon_color }};
+  }
+
+  .ai-button-text-{{ ai_gen_id }} {
+    font-size: {{ block.settings.text_size }}px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .ai-button-text-{{ ai_gen_id }}--1 {
+    color: {{ block.settings.button_1_text_color }};
+  }
+
+  .ai-button-text-{{ ai_gen_id }}--2 {
+    color: {{ block.settings.button_2_text_color }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-button-container-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-button-box-{{ ai_gen_id }} {
+      width: 100%;
+    }
+  }
+{% endstyle %}
+
+<div class="ai-button-container-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <a
+    href="{{ block.settings.button_1_link }}"
+    class="ai-button-box-{{ ai_gen_id }} ai-button-box-{{ ai_gen_id }}--1"
+  >
+    <svg
+      class="ai-button-icon-{{ ai_gen_id }} ai-button-icon-{{ ai_gen_id }}--1"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+      <polyline points="21 15 16 10 5 21"></polyline>
+    </svg>
+    <span class="ai-button-text-{{ ai_gen_id }} ai-button-text-{{ ai_gen_id }}--1">
+      {{ block.settings.button_1_text }}
+    </span>
+  </a>
+
+  <a
+    href="{{ block.settings.button_2_link }}"
+    class="ai-button-box-{{ ai_gen_id }} ai-button-box-{{ ai_gen_id }}--2"
+  >
+    <svg
+      class="ai-button-icon-{{ ai_gen_id }} ai-button-icon-{{ ai_gen_id }}--2"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+      <polyline points="22,6 12,13 2,6"></polyline>
+    </svg>
+    <span class="ai-button-text-{{ ai_gen_id }} ai-button-text-{{ ai_gen_id }}--2">
+      {{ block.settings.button_2_text }}
+    </span>
+  </a>
+</div>
+
+{% schema %}
+{
+  "name": "Button boxes",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "flex-end",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Gap between buttons",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "button_width",
+      "min": 100,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Button width",
+      "default": 200
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Button padding",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "unit": "px",
+      "label": "Border width",
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "min": 20,
+      "max": 80,
+      "step": 5,
+      "unit": "px",
+      "label": "Icon size",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Text size",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Button 1"
+    },
+    {
+      "type": "text",
+      "id": "button_1_text",
+      "label": "Text",
+      "default": "Image Guides"
+    },
+    {
+      "type": "url",
+      "id": "button_1_link",
+      "label": "Link"
+    },
+    {
+      "type": "color",
+      "id": "button_1_bg_color",
+      "label": "Background",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "button_1_hover_bg_color",
+      "label": "Hover background",
+      "default": "#0299d4"
+    },
+    {
+      "type": "color",
+      "id": "button_1_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_1_icon_color",
+      "label": "Icon",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_1_border_color",
+      "label": "Border",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Button 2"
+    },
+    {
+      "type": "text",
+      "id": "button_2_text",
+      "label": "Text",
+      "default": "Contact Form"
+    },
+    {
+      "type": "url",
+      "id": "button_2_link",
+      "label": "Link"
+    },
+    {
+      "type": "color",
+      "id": "button_2_bg_color",
+      "label": "Background",
+      "default": "#df5918"
+    },
+    {
+      "type": "color",
+      "id": "button_2_hover_bg_color",
+      "label": "Hover background",
+      "default": "#c24d15"
+    },
+    {
+      "type": "color",
+      "id": "button_2_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_2_icon_color",
+      "label": "Icon",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_2_border_color",
+      "label": "Border",
+      "default": "#df5918"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Button boxes"
+    }
+  ]
+}
+{% endschema %}

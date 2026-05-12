@@ -1,0 +1,414 @@
+{% doc %}
+  @prompt
+    I need a custom buy button that determines whether an item is sold out or not depending on the quantity left for certain variants. Those variants are 47402042753283, 47402042786051, and 47402042818819. 
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-custom-buy-button-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+  }
+
+  .ai-custom-buy-button__wrapper-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ai-custom-buy-button__button-{{ ai_gen_id }} {
+    width: 100%;
+    padding: {{ block.settings.button_padding }}px;
+    background-color: {{ block.settings.button_bg_color }};
+    color: {{ block.settings.button_text_color }};
+    border: {{ block.settings.button_border_width }}px solid {{ block.settings.button_border_color }};
+    border-radius: {{ block.settings.button_border_radius }}px;
+    font-size: {{ block.settings.button_font_size }}px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .ai-custom-buy-button__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_bg_color }};
+    color: {{ block.settings.button_hover_text_color }};
+    border-color: {{ block.settings.button_hover_border_color }};
+  }
+
+  .ai-custom-buy-button__button-{{ ai_gen_id }}--disabled {
+    background-color: {{ block.settings.sold_out_bg_color }};
+    color: {{ block.settings.sold_out_text_color }};
+    border-color: {{ block.settings.sold_out_border_color }};
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .ai-custom-buy-button__button-{{ ai_gen_id }}--disabled:hover {
+    background-color: {{ block.settings.sold_out_bg_color }};
+    color: {{ block.settings.sold_out_text_color }};
+    border-color: {{ block.settings.sold_out_border_color }};
+  }
+
+  .ai-custom-buy-button__stock-info-{{ ai_gen_id }} {
+    text-align: center;
+    font-size: {{ block.settings.stock_info_font_size }}px;
+    color: {{ block.settings.stock_info_color }};
+  }
+
+  .ai-custom-buy-button__stock-info-{{ ai_gen_id }}--low {
+    color: {{ block.settings.low_stock_color }};
+    font-weight: 600;
+  }
+
+  .ai-custom-buy-button__stock-info-{{ ai_gen_id }}--out {
+    color: {{ block.settings.sold_out_text_color }};
+    font-weight: 600;
+  }
+{% endstyle %}
+
+<custom-buy-button-{{ ai_gen_id }}
+  class="ai-custom-buy-button-{{ ai_gen_id }}"
+  data-variant-ids="{{ block.settings.variant_id_1 }},{{ block.settings.variant_id_2 }},{{ block.settings.variant_id_3 }}"
+  data-low-stock-threshold="{{ block.settings.low_stock_threshold }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-custom-buy-button__wrapper-{{ ai_gen_id }}">
+    <button
+      type="button"
+      class="ai-custom-buy-button__button-{{ ai_gen_id }}"
+      data-button
+    >
+      {{ block.settings.button_text }}
+    </button>
+    
+    {% if block.settings.show_stock_info %}
+      <div class="ai-custom-buy-button__stock-info-{{ ai_gen_id }}" data-stock-info></div>
+    {% endif %}
+  </div>
+</custom-buy-button-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class CustomBuyButton{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.button = this.querySelector('[data-button]');
+        this.stockInfo = this.querySelector('[data-stock-info]');
+        this.variantIds = this.dataset.variantIds.split(',').filter(id => id.trim());
+        this.lowStockThreshold = parseInt(this.dataset.lowStockThreshold) || 5;
+      }
+
+      connectedCallback() {
+        this.checkInventory();
+        this.button.addEventListener('click', this.handleClick.bind(this));
+      }
+
+      async checkInventory() {
+        if (this.variantIds.length === 0) {
+          this.updateButton(false, 'No variants configured');
+          return;
+        }
+
+        try {
+          const inventoryData = await this.fetchInventoryData();
+          const totalInventory = this.calculateTotalInventory(inventoryData);
+          
+          if (totalInventory === 0) {
+            this.updateButton(false, '{{ block.settings.sold_out_text }}');
+            if (this.stockInfo) {
+              this.stockInfo.textContent = '{{ block.settings.sold_out_message }}';
+              this.stockInfo.classList.add('ai-custom-buy-button__stock-info-{{ ai_gen_id }}--out');
+            }
+          } else if (totalInventory <= this.lowStockThreshold) {
+            this.updateButton(true, '{{ block.settings.button_text }}');
+            if (this.stockInfo) {
+              this.stockInfo.textContent = '{{ block.settings.low_stock_message }}'.replace('[quantity]', totalInventory);
+              this.stockInfo.classList.add('ai-custom-buy-button__stock-info-{{ ai_gen_id }}--low');
+            }
+          } else {
+            this.updateButton(true, '{{ block.settings.button_text }}');
+            if (this.stockInfo) {
+              this.stockInfo.textContent = '{{ block.settings.in_stock_message }}';
+            }
+          }
+        } catch (error) {
+          console.error('Error checking inventory:', error);
+          this.updateButton(true, '{{ block.settings.button_text }}');
+        }
+      }
+
+      async fetchInventoryData() {
+        const inventoryPromises = this.variantIds.map(async (variantId) => {
+          try {
+            const response = await fetch(`/variants/${variantId.trim()}/?view=inventory`);
+            if (!response.ok) {
+              return { id: variantId, inventory: 0 };
+            }
+            const data = await response.json();
+            return { id: variantId, inventory: data.inventory_quantity || 0 };
+          } catch (error) {
+            console.error(`Error fetching variant ${variantId}:`, error);
+            return { id: variantId, inventory: 0 };
+          }
+        });
+
+        return await Promise.all(inventoryPromises);
+      }
+
+      calculateTotalInventory(inventoryData) {
+        return inventoryData.reduce((total, item) => total + item.inventory, 0);
+      }
+
+      updateButton(isAvailable, text) {
+        this.button.textContent = text;
+        
+        if (isAvailable) {
+          this.button.classList.remove('ai-custom-buy-button__button-{{ ai_gen_id }}--disabled');
+          this.button.disabled = false;
+        } else {
+          this.button.classList.add('ai-custom-buy-button__button-{{ ai_gen_id }}--disabled');
+          this.button.disabled = true;
+        }
+      }
+
+      handleClick() {
+        if (!this.button.disabled && '{{ block.settings.button_link }}') {
+          window.location.href = '{{ block.settings.button_link }}';
+        }
+      }
+    }
+
+    customElements.define('custom-buy-button-{{ ai_gen_id }}', CustomBuyButton{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Custom buy button",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Variant tracking"
+    },
+    {
+      "type": "text",
+      "id": "variant_id_1",
+      "label": "Variant ID 1",
+      "default": "47402042753283"
+    },
+    {
+      "type": "text",
+      "id": "variant_id_2",
+      "label": "Variant ID 2",
+      "default": "47402042786051"
+    },
+    {
+      "type": "text",
+      "id": "variant_id_3",
+      "label": "Variant ID 3",
+      "default": "47402042818819"
+    },
+    {
+      "type": "range",
+      "id": "low_stock_threshold",
+      "label": "Low stock threshold",
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Add to cart"
+    },
+    {
+      "type": "text",
+      "id": "sold_out_text",
+      "label": "Sold out text",
+      "default": "Sold out"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "range",
+      "id": "button_padding",
+      "label": "Padding",
+      "min": 8,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "button_font_size",
+      "label": "Font size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "button_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "header",
+      "content": "Button colors"
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_border_color",
+      "label": "Border",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_bg_color",
+      "label": "Hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_text_color",
+      "label": "Hover text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_border_color",
+      "label": "Hover border",
+      "default": "#333333"
+    },
+    {
+      "type": "header",
+      "content": "Sold out colors"
+    },
+    {
+      "type": "color",
+      "id": "sold_out_bg_color",
+      "label": "Background",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "sold_out_text_color",
+      "label": "Text",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "sold_out_border_color",
+      "label": "Border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "header",
+      "content": "Stock information"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_stock_info",
+      "label": "Show stock information",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "in_stock_message",
+      "label": "In stock message",
+      "default": "In stock and ready to ship"
+    },
+    {
+      "type": "text",
+      "id": "low_stock_message",
+      "label": "Low stock message",
+      "default": "Only [quantity] left in stock"
+    },
+    {
+      "type": "text",
+      "id": "sold_out_message",
+      "label": "Sold out message",
+      "default": "Currently unavailable"
+    },
+    {
+      "type": "range",
+      "id": "stock_info_font_size",
+      "label": "Font size",
+      "min": 10,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "color",
+      "id": "stock_info_color",
+      "label": "Text color",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "low_stock_color",
+      "label": "Low stock color",
+      "default": "#ff6b00"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom buy button"
+    }
+  ]
+}
+{% endschema %}

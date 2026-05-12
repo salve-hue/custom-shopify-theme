@@ -1,0 +1,556 @@
+{% doc %}
+  @prompt
+    A custom submission form that has three functions:
+    
+    The first is an upload button so users can upload their custom art. It should be limited to image extensions and not others like EXE. The file size limit should be 50 MB.
+    
+    The second field should be a text box for Order Number, where the customer can input their order number to be submitted with the form.
+    
+    The third field should be uneditable, and it should be the link to the file uploaded by the user.
+    
+    Upon submission the file link should be downloadable.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-submission-form-{{ ai_gen_id }} {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+  }
+
+  .ai-submission-form__heading-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.heading_size }}px;
+    margin: 0 0 24px;
+  }
+
+  .ai-submission-form__field-{{ ai_gen_id }} {
+    margin-bottom: 20px;
+  }
+
+  .ai-submission-form__label-{{ ai_gen_id }} {
+    display: block;
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.label_size }}px;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .ai-submission-form__upload-wrapper-{{ ai_gen_id }} {
+    position: relative;
+  }
+
+  .ai-submission-form__upload-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-submission-form__upload-button-{{ ai_gen_id }} {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background-color: {{ block.settings.upload_button_color }};
+    color: {{ block.settings.upload_button_text_color }};
+    border: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-submission-form__upload-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.upload_button_hover_color }};
+  }
+
+  .ai-submission-form__upload-icon-{{ ai_gen_id }} {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ai-submission-form__file-info-{{ ai_gen_id }} {
+    margin-top: 8px;
+    font-size: 14px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-submission-form__text-input-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.input_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    font-size: 14px;
+    background-color: {{ block.settings.input_background }};
+    color: {{ block.settings.text_color }};
+    box-sizing: border-box;
+  }
+
+  .ai-submission-form__text-input-{{ ai_gen_id }}:focus {
+    outline: 2px solid {{ block.settings.input_focus_color }};
+    outline-offset: 2px;
+  }
+
+  .ai-submission-form__text-input-{{ ai_gen_id }}:disabled {
+    background-color: {{ block.settings.disabled_background }};
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .ai-submission-form__submit-button-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 14px 24px;
+    background-color: {{ block.settings.submit_button_color }};
+    color: {{ block.settings.submit_button_text_color }};
+    border: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-submission-form__submit-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.submit_button_hover_color }};
+  }
+
+  .ai-submission-form__submit-button-{{ ai_gen_id }}:disabled {
+    background-color: {{ block.settings.disabled_background }};
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .ai-submission-form__error-{{ ai_gen_id }} {
+    color: {{ block.settings.error_color }};
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .ai-submission-form__success-{{ ai_gen_id }} {
+    color: {{ block.settings.success_color }};
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .ai-submission-form__download-link-{{ ai_gen_id }} {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: {{ block.settings.link_color }};
+    text-decoration: none;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .ai-submission-form__download-link-{{ ai_gen_id }}:hover {
+    text-decoration: underline;
+  }
+
+  .ai-submission-form__download-icon-{{ ai_gen_id }} {
+    width: 16px;
+    height: 16px;
+  }
+{% endstyle %}
+
+<custom-submission-form-{{ ai_gen_id }}
+  class="ai-submission-form-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.heading != blank %}
+    <h2 class="ai-submission-form__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+  {% endif %}
+
+  <form class="ai-submission-form__form-{{ ai_gen_id }}">
+    <div class="ai-submission-form__field-{{ ai_gen_id }}">
+      <label class="ai-submission-form__label-{{ ai_gen_id }}">
+        {{ block.settings.upload_label }}
+      </label>
+      <div class="ai-submission-form__upload-wrapper-{{ ai_gen_id }}">
+        <input
+          type="file"
+          class="ai-submission-form__upload-input-{{ ai_gen_id }}"
+          accept="image/*"
+          data-upload-input
+        >
+        <button
+          type="button"
+          class="ai-submission-form__upload-button-{{ ai_gen_id }}"
+          data-upload-button
+        >
+          <svg class="ai-submission-form__upload-icon-{{ ai_gen_id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          {{ block.settings.upload_button_text }}
+        </button>
+        <div class="ai-submission-form__file-info-{{ ai_gen_id }}" data-file-info></div>
+      </div>
+      <div class="ai-submission-form__error-{{ ai_gen_id }}" data-upload-error></div>
+    </div>
+
+    <div class="ai-submission-form__field-{{ ai_gen_id }}">
+      <label class="ai-submission-form__label-{{ ai_gen_id }}" for="order-number-{{ ai_gen_id }}">
+        {{ block.settings.order_number_label }}
+      </label>
+      <input
+        type="text"
+        id="order-number-{{ ai_gen_id }}"
+        class="ai-submission-form__text-input-{{ ai_gen_id }}"
+        placeholder="{{ block.settings.order_number_placeholder }}"
+        data-order-input
+        required
+      >
+    </div>
+
+    <div class="ai-submission-form__field-{{ ai_gen_id }}">
+      <label class="ai-submission-form__label-{{ ai_gen_id }}" for="file-link-{{ ai_gen_id }}">
+        {{ block.settings.file_link_label }}
+      </label>
+      <input
+        type="text"
+        id="file-link-{{ ai_gen_id }}"
+        class="ai-submission-form__text-input-{{ ai_gen_id }}"
+        data-file-link-input
+        readonly
+        disabled
+      >
+    </div>
+
+    <button
+      type="submit"
+      class="ai-submission-form__submit-button-{{ ai_gen_id }}"
+      data-submit-button
+    >
+      {{ block.settings.submit_button_text }}
+    </button>
+
+    <div class="ai-submission-form__success-{{ ai_gen_id }}" data-success-message></div>
+    <div class="ai-submission-form__error-{{ ai_gen_id }}" data-form-error></div>
+  </form>
+</custom-submission-form-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class CustomSubmissionForm{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.maxFileSize = {{ block.settings.max_file_size }} * 1024 * 1024;
+        this.uploadedFileUrl = null;
+      }
+
+      connectedCallback() {
+        this.uploadInput = this.querySelector('[data-upload-input]');
+        this.uploadButton = this.querySelector('[data-upload-button]');
+        this.fileInfo = this.querySelector('[data-file-info]');
+        this.uploadError = this.querySelector('[data-upload-error]');
+        this.orderInput = this.querySelector('[data-order-input]');
+        this.fileLinkInput = this.querySelector('[data-file-link-input]');
+        this.submitButton = this.querySelector('[data-submit-button]');
+        this.successMessage = this.querySelector('[data-success-message]');
+        this.formError = this.querySelector('[data-form-error]');
+        this.form = this.querySelector('form');
+
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.uploadButton.addEventListener('click', () => {
+          this.uploadInput.click();
+        });
+
+        this.uploadInput.addEventListener('change', (e) => {
+          this.handleFileUpload(e);
+        });
+
+        this.form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleSubmit();
+        });
+      }
+
+      handleFileUpload(event) {
+        const file = event.target.files[0];
+        this.uploadError.textContent = '';
+        this.fileInfo.textContent = '';
+
+        if (!file) {
+          return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+          this.uploadError.textContent = 'Please upload an image file only.';
+          this.uploadInput.value = '';
+          return;
+        }
+
+        if (file.size > this.maxFileSize) {
+          this.uploadError.textContent = `File size must be less than {{ block.settings.max_file_size }}MB.`;
+          this.uploadInput.value = '';
+          return;
+        }
+
+        this.uploadedFileUrl = URL.createObjectURL(file);
+        this.fileLinkInput.value = this.uploadedFileUrl;
+        this.fileInfo.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+      }
+
+      handleSubmit() {
+        this.successMessage.textContent = '';
+        this.formError.textContent = '';
+
+        if (!this.uploadInput.files[0]) {
+          this.formError.textContent = 'Please upload a file.';
+          return;
+        }
+
+        if (!this.orderInput.value.trim()) {
+          this.formError.textContent = 'Please enter your order number.';
+          return;
+        }
+
+        const file = this.uploadInput.files[0];
+        const orderNumber = this.orderInput.value.trim();
+
+        const link = document.createElement('a');
+        link.href = this.uploadedFileUrl;
+        link.download = file.name;
+        link.className = 'ai-submission-form__download-link-{{ ai_gen_id }}';
+        link.innerHTML = `
+          <svg class="ai-submission-form__download-icon-{{ ai_gen_id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download ${file.name}
+        `;
+
+        this.successMessage.textContent = 'Submission successful! ';
+        this.successMessage.appendChild(link);
+
+        this.submitButton.disabled = true;
+        this.orderInput.disabled = true;
+      }
+    }
+
+    customElements.define('custom-submission-form-{{ ai_gen_id }}', CustomSubmissionForm{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Custom submission form",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Submit Your Custom Art"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "upload_label",
+      "label": "Upload field label",
+      "default": "Upload Your Art"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "upload_button_text",
+      "label": "Upload button text",
+      "default": "Choose File"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "order_number_label",
+      "label": "Order number label",
+      "default": "Order Number"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "order_number_placeholder",
+      "label": "Order number placeholder",
+      "default": "Enter your order number"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "file_link_label",
+      "label": "File link label",
+      "default": "File Link"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "submit_button_text",
+      "label": "Submit button text",
+      "default": "Submit"
+    },
+    {
+      "type": "range",
+      "id": "max_file_size",
+      "min": 1,
+      "max": 50,
+      "step": 1,
+      "unit": "MB",
+      "label": "Maximum file size",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Label size",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Form border radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "input_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Input border radius",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Button border radius",
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "input_background",
+      "label": "Input background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Input border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "input_focus_color",
+      "label": "Input focus",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "upload_button_color",
+      "label": "Upload button",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "upload_button_text_color",
+      "label": "Upload button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "upload_button_hover_color",
+      "label": "Upload button hover",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "submit_button_color",
+      "label": "Submit button",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "submit_button_text_color",
+      "label": "Submit button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "submit_button_hover_color",
+      "label": "Submit button hover",
+      "default": "#df5918"
+    },
+    {
+      "type": "color",
+      "id": "disabled_background",
+      "label": "Disabled background",
+      "default": "#e0e0e0"
+    },
+    {
+      "type": "color",
+      "id": "error_color",
+      "label": "Error",
+      "default": "#D82C0D"
+    },
+    {
+      "type": "color",
+      "id": "success_color",
+      "label": "Success",
+      "default": "#008060"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Link",
+      "default": "#02b6fa"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom submission form"
+    }
+  ]
+}
+{% endschema %}

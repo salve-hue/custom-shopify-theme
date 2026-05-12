@@ -1,0 +1,533 @@
+{% doc %}
+  @prompt
+    A simple calculator for users to determine the discount they receive. It should have fields for the number of playmats why want to buy, and if it's between 10 and 19 they get 10% off, 20 and 49 they get 20% off, and 50 or more is 33% off. If they enter 100 or more, it should point them to the bulk order form page.
+    
+    It needs a field for the user to type in the price of the mat so the discount can calculate properly. 
+    
+    When you list the discount table, only list it as two columns: column one with the header minimum quantity, and column two with the header Discount. Then list it as 10, 20, 50 with the respective percentage discount.
+    
+    The calculator should be wide and not tall, with price and quantity on the left, and the math and discount table on the right., Move the minimum quantity and discount table in the middle and calculations to the far right.
+    
+    Add the option to edit the border color, size, radius of the whole box., remove the words discount tiers and your savings
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-discount-calculator-{{ ai_gen_id }} {
+    padding: {{ block.settings.padding }}px;
+    background-color: {{ block.settings.background_color }};
+    border: {{ block.settings.border_width }}px solid {{ block.settings.border_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    max-width: 100%;
+  }
+
+  .ai-discount-calculator__container-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .ai-discount-calculator__section-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ai-discount-calculator__heading-{{ ai_gen_id }} {
+    font-size: {{ block.settings.heading_size }}px;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 20px 0;
+    text-align: center;
+  }
+
+  .ai-discount-calculator__label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .ai-discount-calculator__input-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.input_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    font-size: 16px;
+    background-color: {{ block.settings.input_background_color }};
+    color: {{ block.settings.input_text_color }};
+  }
+
+  .ai-discount-calculator__input-{{ ai_gen_id }}:focus {
+    outline: 2px solid {{ block.settings.input_focus_color }};
+    outline-offset: 2px;
+  }
+
+  .ai-discount-calculator__table-{{ ai_gen_id }} {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ai-discount-calculator__table-{{ ai_gen_id }} th {
+    text-align: left;
+    padding: 12px;
+    background-color: {{ block.settings.table_header_bg }};
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    font-size: {{ block.settings.label_size }}px;
+    border-bottom: 2px solid {{ block.settings.border_color }};
+  }
+
+  .ai-discount-calculator__table-{{ ai_gen_id }} td {
+    padding: 12px;
+    color: {{ block.settings.text_color }};
+    font-size: 16px;
+    border-bottom: 1px solid {{ block.settings.border_color }};
+  }
+
+  .ai-discount-calculator__result-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ai-discount-calculator__result-row-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+  }
+
+  .ai-discount-calculator__result-label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+    font-weight: 500;
+  }
+
+  .ai-discount-calculator__result-value-{{ ai_gen_id }} {
+    font-size: 18px;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+  }
+
+  .ai-discount-calculator__result-value--highlight-{{ ai_gen_id }} {
+    font-size: 24px;
+    color: {{ block.settings.highlight_color }};
+  }
+
+  .ai-discount-calculator__bulk-message-{{ ai_gen_id }} {
+    margin-top: 16px;
+    padding: 16px;
+    background-color: {{ block.settings.message_bg_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    text-align: center;
+  }
+
+  .ai-discount-calculator__bulk-message-{{ ai_gen_id }} p {
+    margin: 0 0 12px 0;
+    color: {{ block.settings.text_color }};
+    font-size: 16px;
+  }
+
+  .ai-discount-calculator__bulk-link-{{ ai_gen_id }} {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: {{ block.settings.button_bg_color }};
+    color: {{ block.settings.button_text_color }};
+    text-decoration: none;
+    border-radius: {{ block.settings.input_border_radius }}px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-discount-calculator__bulk-link-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_bg_color }};
+  }
+
+  .ai-discount-calculator__hidden-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  @media screen and (max-width: 990px) {
+    .ai-discount-calculator__container-{{ ai_gen_id }} {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+  }
+{% endstyle %}
+
+<discount-calculator-{{ ai_gen_id }}
+  class="ai-discount-calculator-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <h2 class="ai-discount-calculator__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+
+  <div class="ai-discount-calculator__container-{{ ai_gen_id }}">
+    <div class="ai-discount-calculator__section-{{ ai_gen_id }}">
+      <div>
+        <label
+          for="price-input-{{ ai_gen_id }}"
+          class="ai-discount-calculator__label-{{ ai_gen_id }}"
+        >
+          Price per mat
+        </label>
+        <input
+          type="number"
+          id="price-input-{{ ai_gen_id }}"
+          class="ai-discount-calculator__input-{{ ai_gen_id }}"
+          placeholder="0.00"
+          min="0"
+          step="0.01"
+          data-price-input
+        >
+      </div>
+
+      <div>
+        <label
+          for="quantity-input-{{ ai_gen_id }}"
+          class="ai-discount-calculator__label-{{ ai_gen_id }}"
+        >
+          Quantity
+        </label>
+        <input
+          type="number"
+          id="quantity-input-{{ ai_gen_id }}"
+          class="ai-discount-calculator__input-{{ ai_gen_id }}"
+          placeholder="0"
+          min="0"
+          step="1"
+          data-quantity-input
+        >
+      </div>
+    </div>
+
+    <div class="ai-discount-calculator__section-{{ ai_gen_id }}">
+      <table class="ai-discount-calculator__table-{{ ai_gen_id }}">
+        <thead>
+          <tr>
+            <th>Minimum quantity</th>
+            <th>Discount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>10</td>
+            <td>10%</td>
+          </tr>
+          <tr>
+            <td>20</td>
+            <td>20%</td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td>33%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ai-discount-calculator__section-{{ ai_gen_id }}">
+      <div class="ai-discount-calculator__result-{{ ai_gen_id }}">
+        <div class="ai-discount-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-discount-calculator__result-label-{{ ai_gen_id }}">Subtotal:</span>
+          <span
+            class="ai-discount-calculator__result-value-{{ ai_gen_id }}"
+            data-subtotal
+          >
+            $0.00
+          </span>
+        </div>
+        <div class="ai-discount-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-discount-calculator__result-label-{{ ai_gen_id }}">Discount:</span>
+          <span
+            class="ai-discount-calculator__result-value-{{ ai_gen_id }}"
+            data-discount-percent
+          >
+            0%
+          </span>
+        </div>
+        <div class="ai-discount-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-discount-calculator__result-label-{{ ai_gen_id }}">You save:</span>
+          <span
+            class="ai-discount-calculator__result-value-{{ ai_gen_id }}"
+            data-savings
+          >
+            $0.00
+          </span>
+        </div>
+        <div class="ai-discount-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-discount-calculator__result-label-{{ ai_gen_id }}">Total:</span>
+          <span
+            class="ai-discount-calculator__result-value-{{ ai_gen_id }} ai-discount-calculator__result-value--highlight-{{ ai_gen_id }}"
+            data-total
+          >
+            $0.00
+          </span>
+        </div>
+      </div>
+
+      <div
+        class="ai-discount-calculator__bulk-message-{{ ai_gen_id }} ai-discount-calculator__hidden-{{ ai_gen_id }}"
+        data-bulk-message
+      >
+        <p>For orders of 100+ mats, please use our bulk order form for the best pricing.</p>
+        <a
+          href="{{ block.settings.bulk_order_url }}"
+          class="ai-discount-calculator__bulk-link-{{ ai_gen_id }}"
+        >
+          Go to bulk order form
+        </a>
+      </div>
+    </div>
+  </div>
+</discount-calculator-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class DiscountCalculator{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.priceInput = this.querySelector('[data-price-input]');
+        this.quantityInput = this.querySelector('[data-quantity-input]');
+        this.subtotalEl = this.querySelector('[data-subtotal]');
+        this.discountPercentEl = this.querySelector('[data-discount-percent]');
+        this.savingsEl = this.querySelector('[data-savings]');
+        this.totalEl = this.querySelector('[data-total]');
+        this.bulkMessageEl = this.querySelector('[data-bulk-message]');
+      }
+
+      connectedCallback() {
+        this.priceInput.addEventListener('input', () => this.calculate());
+        this.quantityInput.addEventListener('input', () => this.calculate());
+      }
+
+      getDiscountPercent(quantity) {
+        if (quantity >= 50) {
+          return 33;
+        }
+        if (quantity >= 20) {
+          return 20;
+        }
+        if (quantity >= 10) {
+          return 10;
+        }
+        return 0;
+      }
+
+      formatCurrency(amount) {
+        return '$' + amount.toFixed(2);
+      }
+
+      calculate() {
+        const price = parseFloat(this.priceInput.value) || 0;
+        const quantity = parseInt(this.quantityInput.value) || 0;
+
+        const subtotal = price * quantity;
+        const discountPercent = this.getDiscountPercent(quantity);
+        const discountAmount = subtotal * (discountPercent / 100);
+        const total = subtotal - discountAmount;
+
+        this.subtotalEl.textContent = this.formatCurrency(subtotal);
+        this.discountPercentEl.textContent = discountPercent + '%';
+        this.savingsEl.textContent = this.formatCurrency(discountAmount);
+        this.totalEl.textContent = this.formatCurrency(total);
+
+        if (quantity >= 100) {
+          this.bulkMessageEl.classList.remove('ai-discount-calculator__hidden-{{ ai_gen_id }}');
+        } else {
+          this.bulkMessageEl.classList.add('ai-discount-calculator__hidden-{{ ai_gen_id }}');
+        }
+      }
+    }
+
+    customElements.define('discount-calculator-{{ ai_gen_id }}', DiscountCalculator{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Discount calculator",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Bulk discount calculator"
+    },
+    {
+      "type": "url",
+      "id": "bulk_order_url",
+      "label": "Bulk order form URL"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Padding",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "label": "Border width",
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Label size",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "highlight_color",
+      "label": "Highlight color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Input fields"
+    },
+    {
+      "type": "range",
+      "id": "input_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 4
+    },
+    {
+      "type": "color",
+      "id": "input_background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "input_text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Border color",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "input_focus_color",
+      "label": "Focus color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Table"
+    },
+    {
+      "type": "color",
+      "id": "table_header_bg",
+      "label": "Header background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "header",
+      "content": "Bulk order message"
+    },
+    {
+      "type": "color",
+      "id": "message_bg_color",
+      "label": "Background color",
+      "default": "#f0f9ff"
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Button background",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_bg_color",
+      "label": "Button hover background",
+      "default": "#0195d1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Discount calculator"
+    }
+  ]
+}
+{% endschema %}

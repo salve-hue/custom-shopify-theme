@@ -1,0 +1,483 @@
+{% doc %}
+  @prompt
+    A simple calculator for users to determine the discount they receive. It should have fields for the number of playmats why want to buy, and if it's between 5 and 9 they get 10% off, 10 and 19 they get 20% off, 20 and 49 they get 30% off, and 50 or more is 40% off. If they enter 100 or more, it should point them to the bulk order form page.
+        
+        It needs a field for the user to type in the price of the mat so the discount can calculate properly. 
+        
+        When you list the discount table, only list it as two columns: column one with the header minimum quantity, and column two with the header Discount. Then list it as 10, 20, 50 with the respective percentage discount.
+        
+        The calculator should be wide and not tall, with price and quantity on the left, and the math and discount table on the right., Move the minimum quantity and discount table in the middle and calculations to the far right.
+        
+        Add the option to edit the border color, size, radius of the whole box., remove the words discount tiers and your savings
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-playmat-calculator-{{ ai_gen_id }} {
+    padding: {{ block.settings.padding }}px;
+    background-color: {{ block.settings.background_color }};
+    border: {{ block.settings.border_width }}px solid {{ block.settings.border_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+  }
+
+  .ai-playmat-calculator__container-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .ai-playmat-calculator__section-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ai-playmat-calculator__heading-{{ ai_gen_id }} {
+    font-size: {{ block.settings.heading_size }}px;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 8px 0;
+    font-weight: 600;
+  }
+
+  .ai-playmat-calculator__label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .ai-playmat-calculator__input-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.input_border_color }};
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .ai-playmat-calculator__input-{{ ai_gen_id }}:focus {
+    outline: 2px solid {{ block.settings.primary_color }};
+    outline-offset: 2px;
+  }
+
+  .ai-playmat-calculator__table-{{ ai_gen_id }} {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ai-playmat-calculator__table-{{ ai_gen_id }} th {
+    text-align: left;
+    padding: 12px 8px;
+    border-bottom: 2px solid {{ block.settings.border_color }};
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+  }
+
+  .ai-playmat-calculator__table-{{ ai_gen_id }} td {
+    padding: 12px 8px;
+    border-bottom: 1px solid {{ block.settings.border_color }};
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-playmat-calculator__result-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ai-playmat-calculator__result-row-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+  }
+
+  .ai-playmat-calculator__result-label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-playmat-calculator__result-value-{{ ai_gen_id }} {
+    font-size: {{ block.settings.result_size }}px;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+  }
+
+  .ai-playmat-calculator__bulk-message-{{ ai_gen_id }} {
+    padding: 16px;
+    background-color: {{ block.settings.message_bg_color }};
+    border-radius: 4px;
+    margin-top: 16px;
+    display: none;
+  }
+
+  .ai-playmat-calculator__bulk-message-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-playmat-calculator__bulk-message-{{ ai_gen_id }} p {
+    margin: 0 0 12px 0;
+    font-size: {{ block.settings.label_size }}px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-playmat-calculator__bulk-link-{{ ai_gen_id }} {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: {{ block.settings.primary_color }};
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: {{ block.settings.label_size }}px;
+  }
+
+  .ai-playmat-calculator__bulk-link-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.primary_hover_color }};
+  }
+
+  @media screen and (max-width: 989px) {
+    .ai-playmat-calculator__container-{{ ai_gen_id }} {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+  }
+{% endstyle %}
+
+<playmat-calculator-{{ ai_gen_id }}
+  class="ai-playmat-calculator-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <h2 class="ai-playmat-calculator__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+  
+  <div class="ai-playmat-calculator__container-{{ ai_gen_id }}">
+    <div class="ai-playmat-calculator__section-{{ ai_gen_id }}">
+      <div>
+        <label class="ai-playmat-calculator__label-{{ ai_gen_id }}" for="price-input-{{ ai_gen_id }}">
+          {{ block.settings.price_label }}
+        </label>
+        <input
+          type="number"
+          id="price-input-{{ ai_gen_id }}"
+          class="ai-playmat-calculator__input-{{ ai_gen_id }}"
+          placeholder="0.00"
+          step="0.01"
+          min="0"
+          data-price-input
+        >
+      </div>
+
+      <div>
+        <label class="ai-playmat-calculator__label-{{ ai_gen_id }}" for="quantity-input-{{ ai_gen_id }}">
+          {{ block.settings.quantity_label }}
+        </label>
+        <input
+          type="number"
+          id="quantity-input-{{ ai_gen_id }}"
+          class="ai-playmat-calculator__input-{{ ai_gen_id }}"
+          placeholder="0"
+          min="0"
+          step="1"
+          data-quantity-input
+        >
+      </div>
+    </div>
+
+    <div class="ai-playmat-calculator__section-{{ ai_gen_id }}">
+      <table class="ai-playmat-calculator__table-{{ ai_gen_id }}">
+        <thead>
+          <tr>
+            <th>{{ block.settings.table_header_quantity }}</th>
+            <th>{{ block.settings.table_header_discount }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>5-9</td>
+            <td>10%</td>
+          </tr>
+          <tr>
+            <td>10-19</td>
+            <td>20%</td>
+          </tr>
+          <tr>
+            <td>20-49</td>
+            <td>30%</td>
+          </tr>
+          <tr>
+            <td>50+</td>
+            <td>40%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ai-playmat-calculator__section-{{ ai_gen_id }}">
+      <div class="ai-playmat-calculator__result-{{ ai_gen_id }}">
+        <div class="ai-playmat-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-playmat-calculator__result-label-{{ ai_gen_id }}">Subtotal:</span>
+          <span class="ai-playmat-calculator__result-value-{{ ai_gen_id }}" data-subtotal>$0.00</span>
+        </div>
+        <div class="ai-playmat-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-playmat-calculator__result-label-{{ ai_gen_id }}">Discount:</span>
+          <span class="ai-playmat-calculator__result-value-{{ ai_gen_id }}" data-discount-percent>0%</span>
+        </div>
+        <div class="ai-playmat-calculator__result-row-{{ ai_gen_id }}">
+          <span class="ai-playmat-calculator__result-label-{{ ai_gen_id }}">Discount Amount:</span>
+          <span class="ai-playmat-calculator__result-value-{{ ai_gen_id }}" data-discount-amount>$0.00</span>
+        </div>
+        <div class="ai-playmat-calculator__result-row-{{ ai_gen_id }}" style="border-top: 2px solid {{ block.settings.border_color }}; padding-top: 12px; margin-top: 8px;">
+          <span class="ai-playmat-calculator__result-label-{{ ai_gen_id }}" style="font-weight: 600;">Total:</span>
+          <span class="ai-playmat-calculator__result-value-{{ ai_gen_id }}" style="font-size: {{ block.settings.result_size | plus: 4 }}px; color: {{ block.settings.primary_color }};" data-total>$0.00</span>
+        </div>
+      </div>
+
+      <div class="ai-playmat-calculator__bulk-message-{{ ai_gen_id }}" data-bulk-message>
+        <p>{{ block.settings.bulk_message }}</p>
+        {% if block.settings.bulk_form_link != blank %}
+          <a href="{{ block.settings.bulk_form_link }}" class="ai-playmat-calculator__bulk-link-{{ ai_gen_id }}">
+            {{ block.settings.bulk_link_text }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</playmat-calculator-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class PlaymatCalculator{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.priceInput = this.querySelector('[data-price-input]');
+        this.quantityInput = this.querySelector('[data-quantity-input]');
+        this.subtotalDisplay = this.querySelector('[data-subtotal]');
+        this.discountPercentDisplay = this.querySelector('[data-discount-percent]');
+        this.discountAmountDisplay = this.querySelector('[data-discount-amount]');
+        this.totalDisplay = this.querySelector('[data-total]');
+        this.bulkMessage = this.querySelector('[data-bulk-message]');
+
+        this.priceInput.addEventListener('input', () => this.calculate());
+        this.quantityInput.addEventListener('input', () => this.calculate());
+      }
+
+      calculate() {
+        const price = parseFloat(this.priceInput.value) || 0;
+        const quantity = parseInt(this.quantityInput.value) || 0;
+
+        const subtotal = price * quantity;
+        let discountPercent = 0;
+
+        if (quantity >= 5 && quantity <= 9) {
+          discountPercent = 10;
+        } else if (quantity >= 10 && quantity <= 19) {
+          discountPercent = 20;
+        } else if (quantity >= 20 && quantity <= 49) {
+          discountPercent = 30;
+        } else if (quantity >= 50) {
+          discountPercent = 40;
+        }
+
+        const discountAmount = subtotal * (discountPercent / 100);
+        const total = subtotal - discountAmount;
+
+        this.subtotalDisplay.textContent = '$' + subtotal.toFixed(2);
+        this.discountPercentDisplay.textContent = discountPercent + '%';
+        this.discountAmountDisplay.textContent = '$' + discountAmount.toFixed(2);
+        this.totalDisplay.textContent = '$' + total.toFixed(2);
+
+        if (quantity >= 100) {
+          this.bulkMessage.classList.add('active');
+        } else {
+          this.bulkMessage.classList.remove('active');
+        }
+      }
+    }
+
+    customElements.define('playmat-calculator-{{ ai_gen_id }}', PlaymatCalculator{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Playmat calculator",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Discount Calculator"
+    },
+    {
+      "type": "text",
+      "id": "price_label",
+      "label": "Price label",
+      "default": "Price per playmat"
+    },
+    {
+      "type": "text",
+      "id": "quantity_label",
+      "label": "Quantity label",
+      "default": "Number of playmats"
+    },
+    {
+      "type": "text",
+      "id": "table_header_quantity",
+      "label": "Table header - quantity",
+      "default": "Minimum Quantity"
+    },
+    {
+      "type": "text",
+      "id": "table_header_discount",
+      "label": "Table header - discount",
+      "default": "Discount"
+    },
+    {
+      "type": "header",
+      "content": "Bulk order message"
+    },
+    {
+      "type": "text",
+      "id": "bulk_message",
+      "label": "Message",
+      "default": "For 100+ playmats, use our bulk order form."
+    },
+    {
+      "type": "text",
+      "id": "bulk_link_text",
+      "label": "Link text",
+      "default": "Go to Bulk Order Form"
+    },
+    {
+      "type": "url",
+      "id": "bulk_form_link",
+      "label": "Bulk form link"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding",
+      "default": 32
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "label": "Border width",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Input border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "primary_hover_color",
+      "label": "Primary hover color",
+      "default": "#df5918"
+    },
+    {
+      "type": "color",
+      "id": "message_bg_color",
+      "label": "Message background",
+      "default": "#fff3cd"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Label size",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "result_size",
+      "min": 14,
+      "max": 28,
+      "step": 2,
+      "unit": "px",
+      "label": "Result size",
+      "default": 18
+    }
+  ],
+  "presets": [
+    {
+      "name": "Playmat calculator"
+    }
+  ]
+}
+{% endschema %}

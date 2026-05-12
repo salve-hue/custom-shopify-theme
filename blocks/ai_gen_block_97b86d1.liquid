@@ -1,0 +1,645 @@
+{% doc %}
+  @prompt
+    Write a subscription widget with options to customize how it looks, colors, size of lines, rounding corners. IT should tie into subscriptions for the product page it is currently enabled., Allow the customization of the discount to either a percent or flat cost.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-subscription-widget-{{ ai_gen_id }} {
+    padding: {{ block.settings.padding }}px;
+    background-color: {{ block.settings.background_color }};
+    border: {{ block.settings.border_width }}px solid {{ block.settings.border_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    margin: {{ block.settings.margin }}px 0;
+  }
+
+  .ai-subscription-widget__title-{{ ai_gen_id }} {
+    font-size: {{ block.settings.title_size }}px;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 {{ block.settings.spacing }}px 0;
+    font-weight: 600;
+  }
+
+  .ai-subscription-widget__options-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: {{ block.settings.spacing }}px;
+  }
+
+  .ai-subscription-widget__option-{{ ai_gen_id }} {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: {{ block.settings.option_padding }}px;
+    background-color: {{ block.settings.option_background }};
+    border: {{ block.settings.option_border_width }}px solid {{ block.settings.option_border_color }};
+    border-radius: {{ block.settings.option_border_radius }}px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ai-subscription-widget__option-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.option_hover_background }};
+    border-color: {{ block.settings.option_hover_border_color }};
+  }
+
+  .ai-subscription-widget__option-{{ ai_gen_id }}.selected {
+    background-color: {{ block.settings.option_selected_background }};
+    border-color: {{ block.settings.option_selected_border_color }};
+  }
+
+  .ai-subscription-widget__radio-{{ ai_gen_id }} {
+    width: 20px;
+    height: 20px;
+    border: 2px solid {{ block.settings.radio_color }};
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    margin-top: 2px;
+  }
+
+  .ai-subscription-widget__option-{{ ai_gen_id }}.selected .ai-subscription-widget__radio-{{ ai_gen_id }}::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    background-color: {{ block.settings.radio_color }};
+    border-radius: 50%;
+  }
+
+  .ai-subscription-widget__option-content-{{ ai_gen_id }} {
+    flex-grow: 1;
+  }
+
+  .ai-subscription-widget__option-label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.option_label_size }}px;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    display: block;
+  }
+
+  .ai-subscription-widget__option-description-{{ ai_gen_id }} {
+    font-size: {{ block.settings.option_description_size }}px;
+    color: {{ block.settings.description_color }};
+    margin: 0;
+  }
+
+  .ai-subscription-widget__option-price-{{ ai_gen_id }} {
+    font-size: {{ block.settings.price_size }}px;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .ai-subscription-widget__discount-{{ ai_gen_id }} {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: {{ block.settings.discount_badge_background }};
+    color: {{ block.settings.discount_badge_text }};
+    border-radius: {{ block.settings.discount_badge_radius }}px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+
+  .ai-subscription-widget__frequency-{{ ai_gen_id }} {
+    margin-top: {{ block.settings.spacing }}px;
+  }
+
+  .ai-subscription-widget__frequency-label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.option_description_size }}px;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 8px 0;
+    display: block;
+  }
+
+  .ai-subscription-widget__frequency-select-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px;
+    border: {{ block.settings.option_border_width }}px solid {{ block.settings.option_border_color }};
+    border-radius: {{ block.settings.option_border_radius }}px;
+    background-color: {{ block.settings.option_background }};
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.option_description_size }}px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-subscription-widget-{{ ai_gen_id }} {
+      padding: {{ block.settings.padding | times: 0.75 }}px;
+    }
+
+    .ai-subscription-widget__title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<subscription-widget-{{ ai_gen_id }}
+  class="ai-subscription-widget-{{ ai_gen_id }}"
+  data-product-id="{{ product.id }}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.title != blank %}
+    <h3 class="ai-subscription-widget__title-{{ ai_gen_id }}">{{ block.settings.title }}</h3>
+  {% endif %}
+
+  <div class="ai-subscription-widget__options-{{ ai_gen_id }}">
+    <div
+      class="ai-subscription-widget__option-{{ ai_gen_id }} {% if block.settings.default_option == 'one_time' %}selected{% endif %}"
+      data-option="one_time"
+      role="button"
+      tabindex="0"
+      aria-pressed="{% if block.settings.default_option == 'one_time' %}true{% else %}false{% endif %}"
+    >
+      <div class="ai-subscription-widget__radio-{{ ai_gen_id }}"></div>
+      <div class="ai-subscription-widget__option-content-{{ ai_gen_id }}">
+        <span class="ai-subscription-widget__option-label-{{ ai_gen_id }}">{{ block.settings.one_time_label }}</span>
+        {% if block.settings.one_time_description != blank %}
+          <p class="ai-subscription-widget__option-description-{{ ai_gen_id }}">{{ block.settings.one_time_description }}</p>
+        {% endif %}
+      </div>
+      <div class="ai-subscription-widget__option-price-{{ ai_gen_id }}">
+        {{ product.selected_or_first_available_variant.price | money }}
+      </div>
+    </div>
+
+    <div
+      class="ai-subscription-widget__option-{{ ai_gen_id }} {% if block.settings.default_option == 'subscription' %}selected{% endif %}"
+      data-option="subscription"
+      role="button"
+      tabindex="0"
+      aria-pressed="{% if block.settings.default_option == 'subscription' %}true{% else %}false{% endif %}"
+    >
+      <div class="ai-subscription-widget__radio-{{ ai_gen_id }}"></div>
+      <div class="ai-subscription-widget__option-content-{{ ai_gen_id }}">
+        <span class="ai-subscription-widget__option-label-{{ ai_gen_id }}">
+          {{ block.settings.subscription_label }}
+          {% if block.settings.show_discount_badge %}
+            {% if block.settings.discount_type == 'percentage' and block.settings.discount_percentage > 0 %}
+              <span class="ai-subscription-widget__discount-{{ ai_gen_id }}">
+                Save {{ block.settings.discount_percentage }}%
+              </span>
+            {% elsif block.settings.discount_type == 'fixed' and block.settings.discount_amount > 0 %}
+              <span class="ai-subscription-widget__discount-{{ ai_gen_id }}">
+                Save {{ block.settings.discount_amount | times: 100 | money }}
+              </span>
+            {% endif %}
+          {% endif %}
+        </span>
+        {% if block.settings.subscription_description != blank %}
+          <p class="ai-subscription-widget__option-description-{{ ai_gen_id }}">{{ block.settings.subscription_description }}</p>
+        {% endif %}
+      </div>
+      <div class="ai-subscription-widget__option-price-{{ ai_gen_id }}">
+        {% if block.settings.discount_type == 'percentage' and block.settings.discount_percentage > 0 %}
+          {% assign discount_multiplier = 100 | minus: block.settings.discount_percentage | divided_by: 100.0 %}
+          {% assign discounted_price = product.selected_or_first_available_variant.price | times: discount_multiplier %}
+          {{ discounted_price | money }}
+        {% elsif block.settings.discount_type == 'fixed' and block.settings.discount_amount > 0 %}
+          {% assign discount_in_cents = block.settings.discount_amount | times: 100 %}
+          {% assign discounted_price = product.selected_or_first_available_variant.price | minus: discount_in_cents %}
+          {% if discounted_price < 0 %}
+            {% assign discounted_price = 0 %}
+          {% endif %}
+          {{ discounted_price | money }}
+        {% else %}
+          {{ product.selected_or_first_available_variant.price | money }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if block.settings.show_frequency_selector %}
+    <div class="ai-subscription-widget__frequency-{{ ai_gen_id }}" style="display: {% if block.settings.default_option == 'subscription' %}block{% else %}none{% endif %};">
+      <label class="ai-subscription-widget__frequency-label-{{ ai_gen_id }}">
+        {{ block.settings.frequency_label }}
+      </label>
+      <select class="ai-subscription-widget__frequency-select-{{ ai_gen_id }}" name="subscription_frequency">
+        <option value="7">Every week</option>
+        <option value="14" selected>Every 2 weeks</option>
+        <option value="30">Every month</option>
+        <option value="60">Every 2 months</option>
+        <option value="90">Every 3 months</option>
+      </select>
+    </div>
+  {% endif %}
+</subscription-widget-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class SubscriptionWidget{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.options = this.querySelectorAll('.ai-subscription-widget__option-{{ ai_gen_id }}');
+        this.frequencyContainer = this.querySelector('.ai-subscription-widget__frequency-{{ ai_gen_id }}');
+      }
+
+      connectedCallback() {
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.options.forEach((option) => {
+          option.addEventListener('click', () => this.handleOptionClick(option));
+          option.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.handleOptionClick(option);
+            }
+          });
+        });
+      }
+
+      handleOptionClick(selectedOption) {
+        this.options.forEach((option) => {
+          option.classList.remove('selected');
+          option.setAttribute('aria-pressed', 'false');
+        });
+
+        selectedOption.classList.add('selected');
+        selectedOption.setAttribute('aria-pressed', 'true');
+
+        const optionType = selectedOption.getAttribute('data-option');
+
+        if (this.frequencyContainer) {
+          if (optionType === 'subscription') {
+            this.frequencyContainer.style.display = 'block';
+          } else {
+            this.frequencyContainer.style.display = 'none';
+          }
+        }
+
+        this.dispatchEvent(new CustomEvent('subscription-option-changed', {
+          detail: {
+            option: optionType,
+            productId: this.getAttribute('data-product-id')
+          },
+          bubbles: true
+        }));
+      }
+    }
+
+    customElements.define('subscription-widget-{{ ai_gen_id }}', SubscriptionWidget{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Subscription widget",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Purchase options"
+    },
+    {
+      "type": "select",
+      "id": "default_option",
+      "label": "Default option",
+      "options": [
+        {
+          "value": "one_time",
+          "label": "One-time purchase"
+        },
+        {
+          "value": "subscription",
+          "label": "Subscribe"
+        }
+      ],
+      "default": "one_time"
+    },
+    {
+      "type": "header",
+      "content": "One-time purchase"
+    },
+    {
+      "type": "text",
+      "id": "one_time_label",
+      "label": "Label",
+      "default": "One-time purchase"
+    },
+    {
+      "type": "text",
+      "id": "one_time_description",
+      "label": "Description"
+    },
+    {
+      "type": "header",
+      "content": "Subscription"
+    },
+    {
+      "type": "text",
+      "id": "subscription_label",
+      "label": "Label",
+      "default": "Subscribe & save"
+    },
+    {
+      "type": "text",
+      "id": "subscription_description",
+      "label": "Description",
+      "default": "Never run out. Cancel anytime."
+    },
+    {
+      "type": "select",
+      "id": "discount_type",
+      "label": "Discount type",
+      "options": [
+        {
+          "value": "percentage",
+          "label": "Percentage"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed amount"
+        }
+      ],
+      "default": "percentage"
+    },
+    {
+      "type": "range",
+      "id": "discount_percentage",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "%",
+      "label": "Discount percentage",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "discount_amount",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "$",
+      "label": "Discount amount",
+      "default": 5
+    },
+    {
+      "type": "checkbox",
+      "id": "show_discount_badge",
+      "label": "Show discount badge",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Frequency selector"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_frequency_selector",
+      "label": "Show frequency selector",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "frequency_label",
+      "label": "Frequency label",
+      "default": "Delivery frequency"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "min": 0,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "margin",
+      "min": 0,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "label": "Margin",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "spacing",
+      "min": 4,
+      "max": 32,
+      "step": 4,
+      "unit": "px",
+      "label": "Spacing between elements",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Widget style"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "label": "Border width",
+      "default": 1
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "min": 12,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Title size",
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "option_label_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Option label size",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "option_description_size",
+      "min": 10,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "label": "Description size",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "price_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Price size",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "description_color",
+      "label": "Description",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Option style"
+    },
+    {
+      "type": "range",
+      "id": "option_padding",
+      "min": 8,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Option padding",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "option_background",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "option_hover_background",
+      "label": "Hover background",
+      "default": "#fafafa"
+    },
+    {
+      "type": "color",
+      "id": "option_selected_background",
+      "label": "Selected background",
+      "default": "#f0f9ff"
+    },
+    {
+      "type": "range",
+      "id": "option_border_width",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "label": "Border width",
+      "default": 2
+    },
+    {
+      "type": "color",
+      "id": "option_border_color",
+      "label": "Border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "option_hover_border_color",
+      "label": "Hover border color",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "option_selected_border_color",
+      "label": "Selected border color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "range",
+      "id": "option_border_radius",
+      "min": 0,
+      "max": 16,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "color",
+      "id": "radio_color",
+      "label": "Radio button color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "header",
+      "content": "Discount badge"
+    },
+    {
+      "type": "color",
+      "id": "discount_badge_background",
+      "label": "Background",
+      "default": "#df5918"
+    },
+    {
+      "type": "color",
+      "id": "discount_badge_text",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "discount_badge_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "Subscription widget"
+    }
+  ]
+}
+{% endschema %}

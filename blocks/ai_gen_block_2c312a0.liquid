@@ -1,0 +1,661 @@
+{% doc %}
+  @prompt
+    A simple form for uploading a file and submitting the link. The user will have an Upload button where they can attach their image file. No more than 50 MB in size. The next inoput field is a text field where they can input their order number. The last is the submit button. These should be customizable. The form should not send the attached file, but a link to the uploaded file on the backend where I can download it separately.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-file-upload-form-{{ ai_gen_id }} {
+    padding: 40px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .ai-file-upload-form__content-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .ai-file-upload-form__heading-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    margin: 0 0 8px;
+    font-size: {{ block.settings.heading_size }}px;
+  }
+
+  .ai-file-upload-form__description-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    opacity: 0.8;
+    margin: 0;
+  }
+
+  .ai-file-upload-form__field-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ai-file-upload-form__label-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .ai-file-upload-form__upload-area-{{ ai_gen_id }} {
+    border: 2px dashed {{ block.settings.upload_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: {{ block.settings.upload_background }};
+  }
+
+  .ai-file-upload-form__upload-area-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.upload_border_hover_color }};
+    background-color: {{ block.settings.upload_background_hover }};
+  }
+
+  .ai-file-upload-form__upload-area-{{ ai_gen_id }}.has-file {
+    border-color: {{ block.settings.success_color }};
+    background-color: {{ block.settings.upload_background_success }};
+  }
+
+  .ai-file-upload-form__upload-icon-{{ ai_gen_id }} {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.6;
+  }
+
+  .ai-file-upload-form__upload-text-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    margin: 0 0 4px;
+    font-weight: 500;
+  }
+
+  .ai-file-upload-form__upload-hint-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    opacity: 0.6;
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .ai-file-upload-form__file-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-file-upload-form__file-name-{{ ai_gen_id }} {
+    color: {{ block.settings.success_color }};
+    font-weight: 500;
+    margin-top: 8px;
+    display: none;
+  }
+
+  .ai-file-upload-form__file-name-{{ ai_gen_id }}.visible {
+    display: block;
+  }
+
+  .ai-file-upload-form__input-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.input_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    font-size: 14px;
+    background-color: {{ block.settings.input_background }};
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-file-upload-form__input-{{ ai_gen_id }}:focus {
+    outline: none;
+    border-color: {{ block.settings.input_border_focus_color }};
+  }
+
+  .ai-file-upload-form__button-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 14px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-file-upload-form__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-file-upload-form__button-{{ ai_gen_id }}:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ai-file-upload-form__message-{{ ai_gen_id }} {
+    padding: 12px 16px;
+    border-radius: {{ block.settings.input_border_radius }}px;
+    font-size: 14px;
+    display: none;
+  }
+
+  .ai-file-upload-form__message-{{ ai_gen_id }}.visible {
+    display: block;
+  }
+
+  .ai-file-upload-form__message-{{ ai_gen_id }}.success {
+    background-color: {{ block.settings.success_background }};
+    color: {{ block.settings.success_color }};
+  }
+
+  .ai-file-upload-form__message-{{ ai_gen_id }}.error {
+    background-color: {{ block.settings.error_background }};
+    color: {{ block.settings.error_color }};
+  }
+
+  .ai-file-upload-form__loading-{{ ai_gen_id }} {
+    display: none;
+    text-align: center;
+    color: {{ block.settings.text_color }};
+    opacity: 0.8;
+  }
+
+  .ai-file-upload-form__loading-{{ ai_gen_id }}.visible {
+    display: block;
+  }
+{% endstyle %}
+
+<file-upload-form-{{ ai_gen_id }}
+  class="ai-file-upload-form-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-file-upload-form__content-{{ ai_gen_id }}">
+    {% if block.settings.heading != blank %}
+      <h2 class="ai-file-upload-form__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+    {% endif %}
+
+    {% if block.settings.description != blank %}
+      <p class="ai-file-upload-form__description-{{ ai_gen_id }}">{{ block.settings.description }}</p>
+    {% endif %}
+
+    <form class="ai-file-upload-form__form-{{ ai_gen_id }}" data-form>
+      <div class="ai-file-upload-form__field-{{ ai_gen_id }}">
+        <label class="ai-file-upload-form__label-{{ ai_gen_id }}">
+          {{ block.settings.file_label }}
+        </label>
+        <div class="ai-file-upload-form__upload-area-{{ ai_gen_id }}" data-upload-area>
+          <svg class="ai-file-upload-form__upload-icon-{{ ai_gen_id }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p class="ai-file-upload-form__upload-text-{{ ai_gen_id }}">{{ block.settings.upload_text }}</p>
+          <p class="ai-file-upload-form__upload-hint-{{ ai_gen_id }}">{{ block.settings.upload_hint }}</p>
+          <input
+            type="file"
+            class="ai-file-upload-form__file-input-{{ ai_gen_id }}"
+            accept="image/*"
+            data-file-input
+            required
+          >
+          <p class="ai-file-upload-form__file-name-{{ ai_gen_id }}" data-file-name></p>
+        </div>
+      </div>
+
+      <div class="ai-file-upload-form__field-{{ ai_gen_id }}">
+        <label class="ai-file-upload-form__label-{{ ai_gen_id }}" for="order-number-{{ ai_gen_id }}">
+          {{ block.settings.order_number_label }}
+        </label>
+        <input
+          type="text"
+          id="order-number-{{ ai_gen_id }}"
+          class="ai-file-upload-form__input-{{ ai_gen_id }}"
+          placeholder="{{ block.settings.order_number_placeholder }}"
+          data-order-input
+          required
+        >
+      </div>
+
+      <button
+        type="submit"
+        class="ai-file-upload-form__button-{{ ai_gen_id }}"
+        data-submit-button
+      >
+        {{ block.settings.submit_button_text }}
+      </button>
+
+      <div class="ai-file-upload-form__loading-{{ ai_gen_id }}" data-loading>
+        {{ block.settings.loading_text }}
+      </div>
+
+      <div class="ai-file-upload-form__message-{{ ai_gen_id }}" data-message></div>
+    </form>
+  </div>
+</file-upload-form-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class FileUploadForm{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.uploadArea = this.querySelector('[data-upload-area]');
+        this.fileInput = this.querySelector('[data-file-input]');
+        this.fileName = this.querySelector('[data-file-name]');
+        this.orderInput = this.querySelector('[data-order-input]');
+        this.form = this.querySelector('[data-form]');
+        this.submitButton = this.querySelector('[data-submit-button]');
+        this.message = this.querySelector('[data-message]');
+        this.loading = this.querySelector('[data-loading]');
+        this.selectedFile = null;
+        this.maxFileSize = 50 * 1024 * 1024;
+      }
+
+      connectedCallback() {
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.uploadArea.addEventListener('click', () => {
+          this.fileInput.click();
+        });
+
+        this.fileInput.addEventListener('change', (e) => {
+          this.handleFileSelect(e.target.files[0]);
+        });
+
+        this.uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          this.uploadArea.style.borderColor = '{{ block.settings.upload_border_hover_color }}';
+        });
+
+        this.uploadArea.addEventListener('dragleave', () => {
+          this.uploadArea.style.borderColor = '{{ block.settings.upload_border_color }}';
+        });
+
+        this.uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          this.uploadArea.style.borderColor = '{{ block.settings.upload_border_color }}';
+          const file = e.dataTransfer.files[0];
+          if (file) {
+            this.handleFileSelect(file);
+          }
+        });
+
+        this.form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleSubmit();
+        });
+      }
+
+      handleFileSelect(file) {
+        if (!file) return;
+
+        if (file.size > this.maxFileSize) {
+          this.showMessage('File size must be less than 50 MB', 'error');
+          return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+          this.showMessage('Please select an image file', 'error');
+          return;
+        }
+
+        this.selectedFile = file;
+        this.fileName.textContent = file.name;
+        this.fileName.classList.add('visible');
+        this.uploadArea.classList.add('has-file');
+        this.hideMessage();
+      }
+
+      async handleSubmit() {
+        if (!this.selectedFile) {
+          this.showMessage('Please select a file', 'error');
+          return;
+        }
+
+        const orderNumber = this.orderInput.value.trim();
+        if (!orderNumber) {
+          this.showMessage('Please enter your order number', 'error');
+          return;
+        }
+
+        this.submitButton.disabled = true;
+        this.loading.classList.add('visible');
+        this.hideMessage();
+
+        try {
+          const fileUrl = await this.uploadFile(this.selectedFile);
+          await this.submitForm(fileUrl, orderNumber);
+          this.showMessage('{{ block.settings.success_message }}', 'success');
+          this.resetForm();
+        } catch (error) {
+          this.showMessage(error.message || '{{ block.settings.error_message }}', 'error');
+        } finally {
+          this.submitButton.disabled = false;
+          this.loading.classList.remove('visible');
+        }
+      }
+
+      async uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/admin/api/2024-01/graphql.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': 'YOUR_ACCESS_TOKEN'
+          },
+          body: JSON.stringify({
+            query: `
+              mutation fileCreate($files: [FileCreateInput!]!) {
+                fileCreate(files: $files) {
+                  files {
+                    ... on GenericFile {
+                      id
+                      url
+                    }
+                  }
+                  userErrors {
+                    field
+                    message
+                  }
+                }
+              }
+            `,
+            variables: {
+              files: [{
+                alt: file.name,
+                contentType: file.type,
+                originalSource: file
+              }]
+            }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload file');
+        }
+
+        const data = await response.json();
+        
+        if (data.errors || data.data.fileCreate.userErrors.length > 0) {
+          throw new Error('Failed to upload file');
+        }
+
+        return data.data.fileCreate.files[0].url;
+      }
+
+      async submitForm(fileUrl, orderNumber) {
+        const formData = new FormData();
+        formData.append('contact[file_url]', fileUrl);
+        formData.append('contact[order_number]', orderNumber);
+        formData.append('form_type', 'contact');
+
+        const response = await fetch('/contact', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to submit form');
+        }
+      }
+
+      showMessage(text, type) {
+        this.message.textContent = text;
+        this.message.className = 'ai-file-upload-form__message-{{ ai_gen_id }} visible ' + type;
+      }
+
+      hideMessage() {
+        this.message.classList.remove('visible');
+      }
+
+      resetForm() {
+        this.selectedFile = null;
+        this.fileInput.value = '';
+        this.orderInput.value = '';
+        this.fileName.classList.remove('visible');
+        this.uploadArea.classList.remove('has-file');
+      }
+    }
+
+    customElements.define('file-upload-form-{{ ai_gen_id }}', FileUploadForm{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "File upload form",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Upload Your File"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "description",
+      "label": "Description",
+      "default": "Submit your image file and order number"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "file_label",
+      "label": "File field label",
+      "default": "Upload image"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "upload_text",
+      "label": "Upload area text",
+      "default": "Click to upload or drag and drop"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "upload_hint",
+      "label": "Upload hint text",
+      "default": "Image files only, max 50 MB"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "order_number_label",
+      "label": "Order number label",
+      "default": "Order number"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "order_number_placeholder",
+      "label": "Order number placeholder",
+      "default": "Enter your order number"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "submit_button_text",
+      "label": "Submit button text",
+      "default": "Submit"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "loading_text",
+      "label": "Loading text",
+      "default": "Uploading..."
+    },
+    {
+      "type": "inline_richtext",
+      "id": "success_message",
+      "label": "Success message",
+      "default": "File uploaded successfully!"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "error_message",
+      "label": "Error message",
+      "default": "Something went wrong. Please try again."
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Form border radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "input_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Input border radius",
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Button border radius",
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "upload_background",
+      "label": "Upload area background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "upload_background_hover",
+      "label": "Upload area hover background",
+      "default": "#fafafa"
+    },
+    {
+      "type": "color",
+      "id": "upload_background_success",
+      "label": "Upload area success background",
+      "default": "#f0fdf4"
+    },
+    {
+      "type": "color",
+      "id": "upload_border_color",
+      "label": "Upload border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "upload_border_hover_color",
+      "label": "Upload border hover",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "input_background",
+      "label": "Input background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Input border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "input_border_focus_color",
+      "label": "Input border focus",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Button hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "success_color",
+      "label": "Success text",
+      "default": "#16a34a"
+    },
+    {
+      "type": "color",
+      "id": "success_background",
+      "label": "Success background",
+      "default": "#f0fdf4"
+    },
+    {
+      "type": "color",
+      "id": "error_color",
+      "label": "Error text",
+      "default": "#dc2626"
+    },
+    {
+      "type": "color",
+      "id": "error_background",
+      "label": "Error background",
+      "default": "#fef2f2"
+    }
+  ],
+  "presets": [
+    {
+      "name": "File upload form"
+    }
+  ]
+}
+{% endschema %}

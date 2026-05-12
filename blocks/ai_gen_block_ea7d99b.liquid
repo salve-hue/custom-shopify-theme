@@ -1,0 +1,785 @@
+{% doc %}
+  @prompt
+    Create an image upload tool with the following options: Enter image URL or drag and drop the image or a button to upload it locally. Once the image is loaded, there should be options for the user to select overlays. The files and overlays are hosted on Shopify files, I can link to the overlays as needed and add them when needed. Once an image is uploaded or selected, the tool should have a 49:29 aspect crop tool. Then they can select the overlay image.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-image-upload-{{ ai_gen_id }} {
+    max-width: 100%;
+    padding: 20px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: 8px;
+  }
+
+  .ai-image-upload__title-{{ ai_gen_id }} {
+    margin: 0 0 20px;
+    color: {{ block.settings.text_color }};
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .ai-image-upload__upload-section-{{ ai_gen_id }} {
+    margin-bottom: 20px;
+  }
+
+  .ai-image-upload__url-input-wrapper-{{ ai_gen_id }} {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .ai-image-upload__url-input-{{ ai_gen_id }} {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .ai-image-upload__url-button-{{ ai_gen_id }} {
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-upload__url-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-image-upload__divider-{{ ai_gen_id }} {
+    text-align: center;
+    margin: 15px 0;
+    color: {{ block.settings.text_color }};
+    opacity: 0.6;
+    font-size: 14px;
+  }
+
+  .ai-image-upload__dropzone-{{ ai_gen_id }} {
+    border: 2px dashed {{ block.settings.border_color }};
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: {{ block.settings.dropzone_bg_color }};
+  }
+
+  .ai-image-upload__dropzone-{{ ai_gen_id }}.dragging {
+    border-color: {{ block.settings.button_color }};
+    background-color: {{ block.settings.button_color }}1a;
+  }
+
+  .ai-image-upload__dropzone-icon-{{ ai_gen_id }} {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 15px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.5;
+  }
+
+  .ai-image-upload__dropzone-text-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+
+  .ai-image-upload__file-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-image-upload__browse-button-{{ ai_gen_id }} {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-upload__browse-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-image-upload__editor-section-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 30px;
+  }
+
+  .ai-image-upload__editor-section-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-image-upload__canvas-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    max-width: 100%;
+    margin-bottom: 20px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ai-image-upload__canvas-container-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 49 / 29;
+    overflow: hidden;
+  }
+
+  .ai-image-upload__canvas-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: move;
+  }
+
+  .ai-image-upload__overlay-canvas-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .ai-image-upload__controls-{{ ai_gen_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .ai-image-upload__control-group-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ai-image-upload__control-label-{{ ai_gen_id }} {
+    font-size: 14px;
+    font-weight: 500;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-image-upload__zoom-slider-{{ ai_gen_id }} {
+    width: 200px;
+  }
+
+  .ai-image-upload__overlay-select-{{ ai_gen_id }} {
+    padding: 10px 16px;
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    cursor: pointer;
+  }
+
+  .ai-image-upload__action-buttons-{{ ai_gen_id }} {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ai-image-upload__button-{{ ai_gen_id }} {
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-upload__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-image-upload__button-secondary-{{ ai_gen_id }} {
+    background-color: transparent;
+    color: {{ block.settings.text_color }};
+    border: 1px solid {{ block.settings.border_color }};
+  }
+
+  .ai-image-upload__button-secondary-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.border_color }};
+  }
+
+  .ai-image-upload__result-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .ai-image-upload__result-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-image-upload__result-image-{{ ai_gen_id }} {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-image-upload__url-input-wrapper-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-image-upload__controls-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-image-upload__zoom-slider-{{ ai_gen_id }} {
+      width: 100%;
+    }
+  }
+{% endstyle %}
+
+<image-upload-tool-{{ ai_gen_id }}
+  class="ai-image-upload-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <h2 class="ai-image-upload__title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+
+  <div class="ai-image-upload__upload-section-{{ ai_gen_id }}">
+    <div class="ai-image-upload__url-input-wrapper-{{ ai_gen_id }}">
+      <input
+        type="text"
+        class="ai-image-upload__url-input-{{ ai_gen_id }}"
+        placeholder="{{ block.settings.url_placeholder }}"
+        aria-label="Image URL"
+      >
+      <button
+        type="button"
+        class="ai-image-upload__url-button-{{ ai_gen_id }}"
+        data-action="load-url"
+      >
+        {{ block.settings.load_button_text }}
+      </button>
+    </div>
+
+    <div class="ai-image-upload__divider-{{ ai_gen_id }}">or</div>
+
+    <div class="ai-image-upload__dropzone-{{ ai_gen_id }}">
+      <svg
+        class="ai-image-upload__dropzone-icon-{{ ai_gen_id }}"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+        />
+      </svg>
+      <div class="ai-image-upload__dropzone-text-{{ ai_gen_id }}">
+        {{ block.settings.dropzone_text }}
+      </div>
+      <label class="ai-image-upload__browse-button-{{ ai_gen_id }}">
+        {{ block.settings.browse_button_text }}
+        <input
+          type="file"
+          class="ai-image-upload__file-input-{{ ai_gen_id }}"
+          accept="image/*"
+          aria-label="Upload image file"
+        >
+      </label>
+    </div>
+  </div>
+
+  <div class="ai-image-upload__editor-section-{{ ai_gen_id }}">
+    <div class="ai-image-upload__canvas-wrapper-{{ ai_gen_id }}">
+      <div class="ai-image-upload__canvas-container-{{ ai_gen_id }}">
+        <canvas class="ai-image-upload__canvas-{{ ai_gen_id }}"></canvas>
+        <canvas class="ai-image-upload__overlay-canvas-{{ ai_gen_id }}"></canvas>
+      </div>
+    </div>
+
+    <div class="ai-image-upload__controls-{{ ai_gen_id }}">
+      <div class="ai-image-upload__control-group-{{ ai_gen_id }}">
+        <label class="ai-image-upload__control-label-{{ ai_gen_id }}">Zoom</label>
+        <input
+          type="range"
+          class="ai-image-upload__zoom-slider-{{ ai_gen_id }}"
+          min="1"
+          max="3"
+          step="0.1"
+          value="1"
+          aria-label="Zoom level"
+        >
+      </div>
+
+      <div class="ai-image-upload__control-group-{{ ai_gen_id }}">
+        <label class="ai-image-upload__control-label-{{ ai_gen_id }}">Overlay</label>
+        <select class="ai-image-upload__overlay-select-{{ ai_gen_id }}" aria-label="Select overlay">
+          <option value="">None</option>
+          {% for i in (1..5) %}
+            {% assign overlay_url_key = 'overlay_' | append: i | append: '_url' %}
+            {% assign overlay_name_key = 'overlay_' | append: i | append: '_name' %}
+            {% if block.settings[overlay_url_key] != blank %}
+              <option value="{{ block.settings[overlay_url_key] }}">
+                {{ block.settings[overlay_name_key] }}
+              </option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="ai-image-upload__action-buttons-{{ ai_gen_id }}">
+      <button
+        type="button"
+        class="ai-image-upload__button-{{ ai_gen_id }}"
+        data-action="generate"
+      >
+        {{ block.settings.generate_button_text }}
+      </button>
+      <button
+        type="button"
+        class="ai-image-upload__button-{{ ai_gen_id }} ai-image-upload__button-secondary-{{ ai_gen_id }}"
+        data-action="reset"
+      >
+        {{ block.settings.reset_button_text }}
+      </button>
+    </div>
+  </div>
+
+  <div class="ai-image-upload__result-{{ ai_gen_id }}">
+    <h3 class="ai-image-upload__control-label-{{ ai_gen_id }}">Final Image:</h3>
+    <img class="ai-image-upload__result-image-{{ ai_gen_id }}" alt="Final composed image">
+  </div>
+</image-upload-tool-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ImageUploadTool{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.image = null;
+        this.overlayImage = null;
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.isDragging = false;
+        this.startX = 0;
+        this.startY = 0;
+      }
+
+      connectedCallback() {
+        this.canvas = this.querySelector('.ai-image-upload__canvas-{{ ai_gen_id }}');
+        this.overlayCanvas = this.querySelector('.ai-image-upload__overlay-canvas-{{ ai_gen_id }}');
+        this.ctx = this.canvas.getContext('2d');
+        this.overlayCtx = this.overlayCanvas.getContext('2d');
+        this.urlInput = this.querySelector('.ai-image-upload__url-input-{{ ai_gen_id }}');
+        this.fileInput = this.querySelector('.ai-image-upload__file-input-{{ ai_gen_id }}');
+        this.dropzone = this.querySelector('.ai-image-upload__dropzone-{{ ai_gen_id }}');
+        this.editorSection = this.querySelector('.ai-image-upload__editor-section-{{ ai_gen_id }}');
+        this.resultSection = this.querySelector('.ai-image-upload__result-{{ ai_gen_id }}');
+        this.resultImage = this.querySelector('.ai-image-upload__result-image-{{ ai_gen_id }}');
+        this.zoomSlider = this.querySelector('.ai-image-upload__zoom-slider-{{ ai_gen_id }}');
+        this.overlaySelect = this.querySelector('.ai-image-upload__overlay-select-{{ ai_gen_id }}');
+
+        this.setupEventListeners();
+        this.initCanvas();
+      }
+
+      setupEventListeners() {
+        this.querySelector('[data-action="load-url"]').addEventListener('click', () => {
+          this.loadImageFromUrl(this.urlInput.value);
+        });
+
+        this.fileInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            this.loadImageFromFile(e.target.files[0]);
+          }
+        });
+
+        this.dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          this.dropzone.classList.add('dragging');
+        });
+
+        this.dropzone.addEventListener('dragleave', () => {
+          this.dropzone.classList.remove('dragging');
+        });
+
+        this.dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          this.dropzone.classList.remove('dragging');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            this.loadImageFromFile(e.dataTransfer.files[0]);
+          }
+        });
+
+        this.zoomSlider.addEventListener('input', (e) => {
+          this.scale = parseFloat(e.target.value);
+          this.drawImage();
+        });
+
+        this.overlaySelect.addEventListener('change', (e) => {
+          if (e.target.value) {
+            this.loadOverlay(e.target.value);
+          } else {
+            this.overlayImage = null;
+            this.drawOverlay();
+          }
+        });
+
+        this.canvas.addEventListener('mousedown', (e) => this.startDrag(e));
+        this.canvas.addEventListener('mousemove', (e) => this.drag(e));
+        this.canvas.addEventListener('mouseup', () => this.endDrag());
+        this.canvas.addEventListener('mouseleave', () => this.endDrag());
+
+        this.canvas.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]));
+        this.canvas.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          this.drag(e.touches[0]);
+        });
+        this.canvas.addEventListener('touchend', () => this.endDrag());
+
+        this.querySelector('[data-action="generate"]').addEventListener('click', () => {
+          this.generateFinalImage();
+        });
+
+        this.querySelector('[data-action="reset"]').addEventListener('click', () => {
+          this.reset();
+        });
+      }
+
+      initCanvas() {
+        const container = this.querySelector('.ai-image-upload__canvas-container-{{ ai_gen_id }}');
+        const rect = container.getBoundingClientRect();
+        this.canvas.width = rect.width;
+        this.canvas.height = rect.height;
+        this.overlayCanvas.width = rect.width;
+        this.overlayCanvas.height = rect.height;
+      }
+
+      loadImageFromUrl(url) {
+        if (!url) return;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          this.image = img;
+          this.resetTransform();
+          this.showEditor();
+        };
+        img.onerror = () => {
+          alert('Failed to load image from URL. Please check the URL and try again.');
+        };
+        img.src = url;
+      }
+
+      loadImageFromFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            this.image = img;
+            this.resetTransform();
+            this.showEditor();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      loadOverlay(url) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          this.overlayImage = img;
+          this.drawOverlay();
+        };
+        img.onerror = () => {
+          alert('Failed to load overlay image.');
+        };
+        img.src = url;
+      }
+
+      resetTransform() {
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.zoomSlider.value = 1;
+        this.drawImage();
+      }
+
+      showEditor() {
+        this.editorSection.classList.add('active');
+        this.resultSection.classList.remove('active');
+      }
+
+      drawImage() {
+        if (!this.image) return;
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const canvasAspect = this.canvas.width / this.canvas.height;
+        const imageAspect = this.image.width / this.image.height;
+
+        let drawWidth, drawHeight;
+        if (imageAspect > canvasAspect) {
+          drawHeight = this.canvas.height * this.scale;
+          drawWidth = drawHeight * imageAspect;
+        } else {
+          drawWidth = this.canvas.width * this.scale;
+          drawHeight = drawWidth / imageAspect;
+        }
+
+        const x = (this.canvas.width - drawWidth) / 2 + this.offsetX;
+        const y = (this.canvas.height - drawHeight) / 2 + this.offsetY;
+
+        this.ctx.drawImage(this.image, x, y, drawWidth, drawHeight);
+      }
+
+      drawOverlay() {
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+
+        if (this.overlayImage) {
+          this.overlayCtx.drawImage(
+            this.overlayImage,
+            0,
+            0,
+            this.overlayCanvas.width,
+            this.overlayCanvas.height
+          );
+        }
+      }
+
+      startDrag(e) {
+        this.isDragging = true;
+        const rect = this.canvas.getBoundingClientRect();
+        this.startX = (e.clientX || e.pageX) - rect.left - this.offsetX;
+        this.startY = (e.clientY || e.pageY) - rect.top - this.offsetY;
+      }
+
+      drag(e) {
+        if (!this.isDragging) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.offsetX = (e.clientX || e.pageX) - rect.left - this.startX;
+        this.offsetY = (e.clientY || e.pageY) - rect.top - this.startY;
+        this.drawImage();
+      }
+
+      endDrag() {
+        this.isDragging = false;
+      }
+
+      generateFinalImage() {
+        if (!this.image) return;
+
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = this.canvas.width;
+        finalCanvas.height = this.canvas.height;
+        const finalCtx = finalCanvas.getContext('2d');
+
+        finalCtx.drawImage(this.canvas, 0, 0);
+
+        if (this.overlayImage) {
+          finalCtx.drawImage(this.overlayCanvas, 0, 0);
+        }
+
+        this.resultImage.src = finalCanvas.toDataURL('image/png');
+        this.resultSection.classList.add('active');
+      }
+
+      reset() {
+        this.image = null;
+        this.overlayImage = null;
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.urlInput.value = '';
+        this.fileInput.value = '';
+        this.zoomSlider.value = 1;
+        this.overlaySelect.value = '';
+        this.editorSection.classList.remove('active');
+        this.resultSection.classList.remove('active');
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+      }
+    }
+
+    customElements.define('image-upload-tool-{{ ai_gen_id }}', ImageUploadTool{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Image upload tool",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Image Upload Tool"
+    },
+    {
+      "type": "text",
+      "id": "url_placeholder",
+      "label": "URL placeholder",
+      "default": "Enter image URL"
+    },
+    {
+      "type": "text",
+      "id": "load_button_text",
+      "label": "Load button text",
+      "default": "Load Image"
+    },
+    {
+      "type": "text",
+      "id": "dropzone_text",
+      "label": "Dropzone text",
+      "default": "Drag and drop your image here"
+    },
+    {
+      "type": "text",
+      "id": "browse_button_text",
+      "label": "Browse button text",
+      "default": "Browse Files"
+    },
+    {
+      "type": "text",
+      "id": "generate_button_text",
+      "label": "Generate button text",
+      "default": "Generate Final Image"
+    },
+    {
+      "type": "text",
+      "id": "reset_button_text",
+      "label": "Reset button text",
+      "default": "Start Over"
+    },
+    {
+      "type": "header",
+      "content": "Overlay images"
+    },
+    {
+      "type": "text",
+      "id": "overlay_1_name",
+      "label": "Overlay 1 name",
+      "default": "Overlay 1"
+    },
+    {
+      "type": "url",
+      "id": "overlay_1_url",
+      "label": "Overlay 1 URL"
+    },
+    {
+      "type": "text",
+      "id": "overlay_2_name",
+      "label": "Overlay 2 name",
+      "default": "Overlay 2"
+    },
+    {
+      "type": "url",
+      "id": "overlay_2_url",
+      "label": "Overlay 2 URL"
+    },
+    {
+      "type": "text",
+      "id": "overlay_3_name",
+      "label": "Overlay 3 name",
+      "default": "Overlay 3"
+    },
+    {
+      "type": "url",
+      "id": "overlay_3_url",
+      "label": "Overlay 3 URL"
+    },
+    {
+      "type": "text",
+      "id": "overlay_4_name",
+      "label": "Overlay 4 name",
+      "default": "Overlay 4"
+    },
+    {
+      "type": "url",
+      "id": "overlay_4_url",
+      "label": "Overlay 4 URL"
+    },
+    {
+      "type": "text",
+      "id": "overlay_5_name",
+      "label": "Overlay 5 name",
+      "default": "Overlay 5"
+    },
+    {
+      "type": "url",
+      "id": "overlay_5_url",
+      "label": "Overlay 5 URL"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "dropzone_bg_color",
+      "label": "Dropzone background",
+      "default": "#f9f9f9"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button background",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Button hover background",
+      "default": "#0299d4"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image upload tool"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,743 @@
+{% doc %}
+  @prompt
+    A simple image upload, crop, and download tool. The image types allowed are JPG, JPEG, PNG, TIF, and TIFF.
+    
+    The user should be prompted to upload a file, drag and drop a file, or paste a URL to the image file.
+    
+    The tool should display the image file, and set a fixed crop window at a 49:29 aspect ratio. This ratio is based on the uploaded image's resolution. This is a fixed crop window, which means the user can move it around to crop an area, but they cannot resize it.
+    
+    Once the window is in place, the user can crop the image, and download it at full resolution to their phone or PC., the tool should have options for me to edit the layout, make it wider., The URL box should not prompt the user to open a file. It should only accept a text link., The width does not work. It should be responsive to the width I choose. If I make it wider, the layout of the tool should respond to it.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% liquid
+  assign container_width = '100%'
+  if block.settings.layout_width == 'narrow'
+    assign container_width = '900px'
+  elsif block.settings.layout_width == 'medium'
+    assign container_width = '1200px'
+  elsif block.settings.layout_width == 'wide'
+    assign container_width = '1400px'
+  elsif block.settings.layout_width == 'full'
+    assign container_width = '100%'
+  endif
+%}
+
+{% style %}
+  .ai-image-crop-tool-{{ ai_gen_id }} {
+    width: 100%;
+    max-width: {{ container_width }};
+    margin: 0 auto;
+    padding: {{ block.settings.section_padding }}px 20px;
+    font-family: {{ settings.type_body_font.family }}, sans-serif;
+  }
+
+  .ai-image-crop-tool__title-{{ ai_gen_id }} {
+    text-align: center;
+    margin-bottom: 30px;
+    color: {{ block.settings.text_color }};
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .ai-image-crop-tool__upload-area-{{ ai_gen_id }} {
+    border: 2px dashed {{ block.settings.border_color }};
+    border-radius: 12px;
+    padding: 60px 20px;
+    text-align: center;
+    background-color: {{ block.settings.upload_bg_color }};
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 30px;
+  }
+
+  .ai-image-crop-tool__upload-area-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.primary_color }};
+    background-color: {{ block.settings.upload_hover_bg_color }};
+  }
+
+  .ai-image-crop-tool__upload-area-{{ ai_gen_id }}.dragging {
+    border-color: {{ block.settings.primary_color }};
+    background-color: {{ block.settings.upload_hover_bg_color }};
+  }
+
+  .ai-image-crop-tool__upload-icon-{{ ai_gen_id }} {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 20px;
+    color: {{ block.settings.primary_color }};
+  }
+
+  .ai-image-crop-tool__upload-text-{{ ai_gen_id }} {
+    font-size: 18px;
+    color: {{ block.settings.text_color }};
+    margin-bottom: 10px;
+  }
+
+  .ai-image-crop-tool__upload-subtext-{{ ai_gen_id }} {
+    font-size: 14px;
+    color: {{ block.settings.subtext_color }};
+    margin-bottom: 20px;
+  }
+
+  .ai-image-crop-tool__url-input-wrapper-{{ ai_gen_id }} {
+    max-width: 500px;
+    margin: 20px auto 0;
+    display: flex;
+    gap: 10px;
+  }
+
+  .ai-image-crop-tool__url-input-{{ ai_gen_id }} {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .ai-image-crop-tool__url-button-{{ ai_gen_id }} {
+    padding: 12px 24px;
+    background-color: {{ block.settings.primary_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-crop-tool__url-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.primary_hover_color }};
+  }
+
+  .ai-image-crop-tool__file-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-image-crop-tool__workspace-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 30px;
+  }
+
+  .ai-image-crop-tool__workspace-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-image-crop-tool__canvas-wrapper-{{ ai_gen_id }} {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .ai-image-crop-tool__canvas-container-{{ ai_gen_id }} {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ai-image-crop-tool__canvas-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .ai-image-crop-tool__crop-overlay-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .ai-image-crop-tool__crop-window-{{ ai_gen_id }} {
+    position: absolute;
+    border: 2px solid {{ block.settings.primary_color }};
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    cursor: move;
+    pointer-events: auto;
+  }
+
+  .ai-image-crop-tool__crop-info-{{ ai_gen_id }} {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    background-color: {{ block.settings.primary_color }};
+    color: {{ block.settings.button_text_color }};
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .ai-image-crop-tool__controls-{{ ai_gen_id }} {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }} {
+    padding: 14px 28px;
+    background-color: {{ block.settings.primary_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.primary_hover_color }};
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }}--secondary {
+    background-color: {{ block.settings.secondary_color }};
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }}--secondary:hover {
+    background-color: {{ block.settings.secondary_hover_color }};
+  }
+
+  .ai-image-crop-tool__error-{{ ai_gen_id }} {
+    background-color: #fee;
+    color: #c00;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
+    text-align: center;
+    display: none;
+  }
+
+  .ai-image-crop-tool__error-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-image-crop-tool-{{ ai_gen_id }} {
+      padding: {{ block.settings.section_padding | times: 0.6 }}px 15px;
+    }
+
+    .ai-image-crop-tool__title-{{ ai_gen_id }} {
+      font-size: 22px;
+    }
+
+    .ai-image-crop-tool__upload-area-{{ ai_gen_id }} {
+      padding: 40px 15px;
+    }
+
+    .ai-image-crop-tool__url-input-wrapper-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-image-crop-tool__controls-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-image-crop-tool__button-{{ ai_gen_id }} {
+      width: 100%;
+    }
+  }
+{% endstyle %}
+
+<image-crop-tool-{{ ai_gen_id }} class="ai-image-crop-tool-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <h2 class="ai-image-crop-tool__title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+
+  <div class="ai-image-crop-tool__upload-area-{{ ai_gen_id }}" id="upload-area-{{ ai_gen_id }}">
+    <div class="ai-image-crop-tool__upload-icon-{{ ai_gen_id }}">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+    </div>
+    <div class="ai-image-crop-tool__upload-text-{{ ai_gen_id }}">{{ block.settings.upload_text }}</div>
+    <div class="ai-image-crop-tool__upload-subtext-{{ ai_gen_id }}">{{ block.settings.upload_subtext }}</div>
+    
+    <div class="ai-image-crop-tool__url-input-wrapper-{{ ai_gen_id }}">
+      <input 
+        type="url" 
+        class="ai-image-crop-tool__url-input-{{ ai_gen_id }}" 
+        id="url-input-{{ ai_gen_id }}"
+        placeholder="{{ block.settings.url_placeholder }}"
+      >
+      <button class="ai-image-crop-tool__url-button-{{ ai_gen_id }}" id="url-button-{{ ai_gen_id }}">
+        {{ block.settings.url_button_text }}
+      </button>
+    </div>
+  </div>
+
+  <input 
+    type="file" 
+    class="ai-image-crop-tool__file-input-{{ ai_gen_id }}" 
+    id="file-input-{{ ai_gen_id }}"
+    accept=".jpg,.jpeg,.png,.tif,.tiff"
+  >
+
+  <div class="ai-image-crop-tool__workspace-{{ ai_gen_id }}" id="workspace-{{ ai_gen_id }}">
+    <div class="ai-image-crop-tool__canvas-wrapper-{{ ai_gen_id }}">
+      <div class="ai-image-crop-tool__canvas-container-{{ ai_gen_id }}" id="canvas-container-{{ ai_gen_id }}">
+        <canvas class="ai-image-crop-tool__canvas-{{ ai_gen_id }}" id="canvas-{{ ai_gen_id }}"></canvas>
+        <div class="ai-image-crop-tool__crop-overlay-{{ ai_gen_id }}" id="crop-overlay-{{ ai_gen_id }}">
+          <div class="ai-image-crop-tool__crop-window-{{ ai_gen_id }}" id="crop-window-{{ ai_gen_id }}">
+            <div class="ai-image-crop-tool__crop-info-{{ ai_gen_id }}" id="crop-info-{{ ai_gen_id }}"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-image-crop-tool__controls-{{ ai_gen_id }}">
+      <button class="ai-image-crop-tool__button-{{ ai_gen_id }}" id="crop-button-{{ ai_gen_id }}">
+        {{ block.settings.crop_button_text }}
+      </button>
+      <button class="ai-image-crop-tool__button-{{ ai_gen_id }} ai-image-crop-tool__button-{{ ai_gen_id }}--secondary" id="reset-button-{{ ai_gen_id }}">
+        {{ block.settings.reset_button_text }}
+      </button>
+    </div>
+  </div>
+
+  <div class="ai-image-crop-tool__error-{{ ai_gen_id }}" id="error-message-{{ ai_gen_id }}"></div>
+</image-crop-tool-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ImageCropTool{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.aspectRatio = 49 / 29;
+        this.originalImage = null;
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.cropX = 0;
+        this.cropY = 0;
+      }
+
+      connectedCallback() {
+        this.uploadArea = this.querySelector('#upload-area-{{ ai_gen_id }}');
+        this.fileInput = this.querySelector('#file-input-{{ ai_gen_id }}');
+        this.urlInput = this.querySelector('#url-input-{{ ai_gen_id }}');
+        this.urlButton = this.querySelector('#url-button-{{ ai_gen_id }}');
+        this.workspace = this.querySelector('#workspace-{{ ai_gen_id }}');
+        this.canvas = this.querySelector('#canvas-{{ ai_gen_id }}');
+        this.ctx = this.canvas.getContext('2d');
+        this.cropWindow = this.querySelector('#crop-window-{{ ai_gen_id }}');
+        this.cropInfo = this.querySelector('#crop-info-{{ ai_gen_id }}');
+        this.cropButton = this.querySelector('#crop-button-{{ ai_gen_id }}');
+        this.resetButton = this.querySelector('#reset-button-{{ ai_gen_id }}');
+        this.errorMessage = this.querySelector('#error-message-{{ ai_gen_id }}');
+
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.uploadArea.addEventListener('click', (e) => {
+          if (e.target === this.urlInput || e.target === this.urlButton) {
+            return;
+          }
+          this.fileInput.click();
+        });
+
+        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        this.urlButton.addEventListener('click', () => this.handleUrlLoad());
+        this.urlInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.handleUrlLoad();
+        });
+
+        this.uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.add('dragging');
+        });
+
+        this.uploadArea.addEventListener('dragleave', () => {
+          this.uploadArea.classList.remove('dragging');
+        });
+
+        this.uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.remove('dragging');
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            this.loadImageFile(files[0]);
+          }
+        });
+
+        document.addEventListener('paste', (e) => {
+          const items = e.clipboardData.items;
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+              const blob = items[i].getAsFile();
+              this.loadImageFile(blob);
+              break;
+            }
+          }
+        });
+
+        this.cropWindow.addEventListener('mousedown', (e) => this.startDrag(e));
+        document.addEventListener('mousemove', (e) => this.drag(e));
+        document.addEventListener('mouseup', () => this.stopDrag());
+
+        this.cropWindow.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]));
+        document.addEventListener('touchmove', (e) => {
+          if (this.isDragging) {
+            e.preventDefault();
+            this.drag(e.touches[0]);
+          }
+        }, { passive: false });
+        document.addEventListener('touchend', () => this.stopDrag());
+
+        this.cropButton.addEventListener('click', () => this.cropAndDownload());
+        this.resetButton.addEventListener('click', () => this.reset());
+      }
+
+      handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+          this.loadImageFile(file);
+        }
+      }
+
+      handleUrlLoad() {
+        const url = this.urlInput.value.trim();
+        if (!url) {
+          this.showError('Please enter a valid image URL');
+          return;
+        }
+        this.loadImageFromUrl(url);
+      }
+
+      loadImageFile(file) {
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff'];
+        if (!validTypes.includes(file.type)) {
+          this.showError('Invalid file type. Please upload JPG, JPEG, PNG, TIF, or TIFF files only.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.loadImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      loadImageFromUrl(url) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          this.loadImage(img.src);
+        };
+        img.onerror = () => {
+          this.showError('Failed to load image from URL. Please check the URL and try again.');
+        };
+        img.src = url;
+      }
+
+      loadImage(src) {
+        const img = new Image();
+        img.onload = () => {
+          this.originalImage = img;
+          this.displayImage();
+          this.hideError();
+        };
+        img.src = src;
+      }
+
+      displayImage() {
+        const containerWidth = this.offsetWidth - 40;
+        const maxWidth = Math.min(this.originalImage.width, containerWidth);
+        const scale = maxWidth / this.originalImage.width;
+        const displayWidth = this.originalImage.width * scale;
+        const displayHeight = this.originalImage.height * scale;
+
+        this.canvas.width = displayWidth;
+        this.canvas.height = displayHeight;
+        this.ctx.drawImage(this.originalImage, 0, 0, displayWidth, displayHeight);
+
+        this.workspace.classList.add('active');
+        this.initializeCropWindow();
+      }
+
+      initializeCropWindow() {
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+
+        let cropWidth, cropHeight;
+
+        if (canvasWidth / canvasHeight > this.aspectRatio) {
+          cropHeight = canvasHeight;
+          cropWidth = cropHeight * this.aspectRatio;
+        } else {
+          cropWidth = canvasWidth;
+          cropHeight = cropWidth / this.aspectRatio;
+        }
+
+        this.cropX = (canvasWidth - cropWidth) / 2;
+        this.cropY = (canvasHeight - cropHeight) / 2;
+
+        this.cropWindow.style.left = this.cropX + 'px';
+        this.cropWindow.style.top = this.cropY + 'px';
+        this.cropWindow.style.width = cropWidth + 'px';
+        this.cropWindow.style.height = cropHeight + 'px';
+
+        this.updateCropInfo(cropWidth, cropHeight);
+      }
+
+      startDrag(e) {
+        this.isDragging = true;
+        this.dragStartX = e.clientX - this.cropX;
+        this.dragStartY = e.clientY - this.cropY;
+      }
+
+      drag(e) {
+        if (!this.isDragging) return;
+
+        const newX = e.clientX - this.dragStartX;
+        const newY = e.clientY - this.dragStartY;
+
+        const cropWidth = parseFloat(this.cropWindow.style.width);
+        const cropHeight = parseFloat(this.cropWindow.style.height);
+
+        this.cropX = Math.max(0, Math.min(newX, this.canvas.width - cropWidth));
+        this.cropY = Math.max(0, Math.min(newY, this.canvas.height - cropHeight));
+
+        this.cropWindow.style.left = this.cropX + 'px';
+        this.cropWindow.style.top = this.cropY + 'px';
+      }
+
+      stopDrag() {
+        this.isDragging = false;
+      }
+
+      updateCropInfo(width, height) {
+        const scale = this.originalImage.width / this.canvas.width;
+        const actualWidth = Math.round(width * scale);
+        const actualHeight = Math.round(height * scale);
+        this.cropInfo.textContent = `${actualWidth} × ${actualHeight}px`;
+      }
+
+      cropAndDownload() {
+        const cropWidth = parseFloat(this.cropWindow.style.width);
+        const cropHeight = parseFloat(this.cropWindow.style.height);
+        const scale = this.originalImage.width / this.canvas.width;
+
+        const actualCropX = this.cropX * scale;
+        const actualCropY = this.cropY * scale;
+        const actualCropWidth = cropWidth * scale;
+        const actualCropHeight = cropHeight * scale;
+
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = actualCropWidth;
+        cropCanvas.height = actualCropHeight;
+        const cropCtx = cropCanvas.getContext('2d');
+
+        cropCtx.drawImage(
+          this.originalImage,
+          actualCropX,
+          actualCropY,
+          actualCropWidth,
+          actualCropHeight,
+          0,
+          0,
+          actualCropWidth,
+          actualCropHeight
+        );
+
+        cropCanvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'cropped-image-49x29.jpg';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 'image/jpeg', 1.0);
+      }
+
+      reset() {
+        this.workspace.classList.remove('active');
+        this.originalImage = null;
+        this.fileInput.value = '';
+        this.urlInput.value = '';
+        this.hideError();
+      }
+
+      showError(message) {
+        this.errorMessage.textContent = message;
+        this.errorMessage.classList.add('active');
+      }
+
+      hideError() {
+        this.errorMessage.classList.remove('active');
+      }
+    }
+
+    customElements.define('image-crop-tool-{{ ai_gen_id }}', ImageCropTool{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Image crop tool",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "layout_width",
+      "label": "Width",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "Narrow"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "wide",
+          "label": "Wide"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Vertical padding",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Image Crop Tool"
+    },
+    {
+      "type": "text",
+      "id": "upload_text",
+      "label": "Upload text",
+      "default": "Drop your image here or click to browse"
+    },
+    {
+      "type": "text",
+      "id": "upload_subtext",
+      "label": "Upload subtext",
+      "default": "Supports JPG, JPEG, PNG, TIF, and TIFF files"
+    },
+    {
+      "type": "text",
+      "id": "url_placeholder",
+      "label": "URL placeholder",
+      "default": "Or paste image URL here"
+    },
+    {
+      "type": "text",
+      "id": "url_button_text",
+      "label": "URL button text",
+      "default": "Load"
+    },
+    {
+      "type": "text",
+      "id": "crop_button_text",
+      "label": "Crop button text",
+      "default": "Crop & Download"
+    },
+    {
+      "type": "text",
+      "id": "reset_button_text",
+      "label": "Reset button text",
+      "default": "Start Over"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "primary_hover_color",
+      "label": "Primary hover color",
+      "default": "#0298d1"
+    },
+    {
+      "type": "color",
+      "id": "secondary_color",
+      "label": "Secondary color",
+      "default": "#6c757d"
+    },
+    {
+      "type": "color",
+      "id": "secondary_hover_color",
+      "label": "Secondary hover color",
+      "default": "#5a6268"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "subtext_color",
+      "label": "Subtext color",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "upload_bg_color",
+      "label": "Upload background",
+      "default": "#f8f9fa"
+    },
+    {
+      "type": "color",
+      "id": "upload_hover_bg_color",
+      "label": "Upload hover background",
+      "default": "#e9ecef"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image crop tool"
+    }
+  ]
+}
+{% endschema %}

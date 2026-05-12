@@ -1,0 +1,525 @@
+{% doc %}
+  @prompt
+    Create a custom block for text that has full word processing capabilities, like fonts, colors, sizes, formatting, and everything. I need all options available so I can make text look nice and readable.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-rich-text-block-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+    padding: {{ block.settings.padding_top }}px {{ block.settings.padding_horizontal }}px {{ block.settings.padding_bottom }}px {{ block.settings.padding_horizontal }}px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} {
+    font-family: {{ block.settings.font_family.family }}, {{ block.settings.font_family.fallback_families }};
+    font-weight: {{ block.settings.font_family.weight }};
+    font-style: {{ block.settings.font_family.style }};
+    font-size: {{ block.settings.font_size }}px;
+    line-height: {{ block.settings.line_height }};
+    letter-spacing: {{ block.settings.letter_spacing }}em;
+    color: {{ block.settings.text_color }};
+    text-align: {{ block.settings.text_align }};
+    {% if block.settings.text_transform != 'none' %}
+      text-transform: {{ block.settings.text_transform }};
+    {% endif %}
+    {% if block.settings.font_style == 'italic' %}
+      font-style: italic;
+    {% endif %}
+    {% if block.settings.text_decoration != 'none' %}
+      text-decoration: {{ block.settings.text_decoration }};
+    {% endif %}
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} h1,
+  .ai-rich-text-content-{{ ai_gen_id }} h2,
+  .ai-rich-text-content-{{ ai_gen_id }} h3,
+  .ai-rich-text-content-{{ ai_gen_id }} h4,
+  .ai-rich-text-content-{{ ai_gen_id }} h5,
+  .ai-rich-text-content-{{ ai_gen_id }} h6 {
+    color: {{ block.settings.heading_color }};
+    margin-top: {{ block.settings.heading_spacing }}px;
+    margin-bottom: {{ block.settings.heading_spacing | divided_by: 2 }}px;
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} p {
+    margin-bottom: {{ block.settings.paragraph_spacing }}px;
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} a {
+    color: {{ block.settings.link_color }};
+    text-decoration: {{ block.settings.link_decoration }};
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} a:hover {
+    color: {{ block.settings.link_hover_color }};
+    {% if block.settings.link_hover_decoration != 'none' %}
+      text-decoration: {{ block.settings.link_hover_decoration }};
+    {% endif %}
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} ul,
+  .ai-rich-text-content-{{ ai_gen_id }} ol {
+    margin-left: {{ block.settings.list_indent }}px;
+    margin-bottom: {{ block.settings.paragraph_spacing }}px;
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} li {
+    margin-bottom: {{ block.settings.list_item_spacing }}px;
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} blockquote {
+    border-left: {{ block.settings.blockquote_border_width }}px solid {{ block.settings.blockquote_border_color }};
+    padding-left: {{ block.settings.blockquote_padding }}px;
+    margin: {{ block.settings.paragraph_spacing }}px 0;
+    font-style: {{ block.settings.blockquote_style }};
+    color: {{ block.settings.blockquote_color }};
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} strong,
+  .ai-rich-text-content-{{ ai_gen_id }} b {
+    font-weight: {{ block.settings.bold_weight }};
+  }
+
+  .ai-rich-text-content-{{ ai_gen_id }} em,
+  .ai-rich-text-content-{{ ai_gen_id }} i {
+    font-style: italic;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-rich-text-block-{{ ai_gen_id }} {
+      width: 100%;
+      padding: {{ block.settings.padding_top | times: 0.7 }}px {{ block.settings.padding_horizontal | times: 0.7 }}px {{ block.settings.padding_bottom | times: 0.7 }}px {{ block.settings.padding_horizontal | times: 0.7 }}px;
+    }
+
+    .ai-rich-text-content-{{ ai_gen_id }} {
+      font-size: {{ block.settings.font_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<div class="ai-rich-text-block-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-rich-text-content-{{ ai_gen_id }}">
+    {% if block.settings.content != blank %}
+      {{ block.settings.content }}
+    {% else %}
+      <p>Add your rich text content here. Use the editor to format your text with headings, paragraphs, lists, and more.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Rich text editor",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "richtext",
+      "id": "content",
+      "label": "Text content"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "font_picker",
+      "id": "font_family",
+      "label": "Font",
+      "default": "rubik_n4"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "Font size",
+      "min": 10,
+      "max": 72,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "line_height",
+      "label": "Line height",
+      "options": [
+        {
+          "value": "1",
+          "label": "Tight (1.0)"
+        },
+        {
+          "value": "1.2",
+          "label": "Snug (1.2)"
+        },
+        {
+          "value": "1.5",
+          "label": "Normal (1.5)"
+        },
+        {
+          "value": "1.8",
+          "label": "Relaxed (1.8)"
+        },
+        {
+          "value": "2",
+          "label": "Loose (2.0)"
+        }
+      ],
+      "default": "1.5"
+    },
+    {
+      "type": "range",
+      "id": "letter_spacing",
+      "label": "Letter spacing",
+      "min": -0.1,
+      "max": 0.5,
+      "step": 0.1,
+      "unit": "em",
+      "default": 0
+    },
+    {
+      "type": "select",
+      "id": "text_transform",
+      "label": "Text transform",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "uppercase",
+          "label": "Uppercase"
+        },
+        {
+          "value": "lowercase",
+          "label": "Lowercase"
+        },
+        {
+          "value": "capitalize",
+          "label": "Capitalize"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "select",
+      "id": "font_style",
+      "label": "Font style",
+      "options": [
+        {
+          "value": "normal",
+          "label": "Normal"
+        },
+        {
+          "value": "italic",
+          "label": "Italic"
+        }
+      ],
+      "default": "normal"
+    },
+    {
+      "type": "select",
+      "id": "text_decoration",
+      "label": "Text decoration",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "underline",
+          "label": "Underline"
+        },
+        {
+          "value": "line-through",
+          "label": "Strikethrough"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "select",
+      "id": "bold_weight",
+      "label": "Bold weight",
+      "options": [
+        {
+          "value": "600",
+          "label": "Semi-bold (600)"
+        },
+        {
+          "value": "700",
+          "label": "Bold (700)"
+        },
+        {
+          "value": "800",
+          "label": "Extra bold (800)"
+        },
+        {
+          "value": "900",
+          "label": "Black (900)"
+        }
+      ],
+      "default": "700"
+    },
+    {
+      "type": "header",
+      "content": "Alignment and spacing"
+    },
+    {
+      "type": "select",
+      "id": "text_align",
+      "label": "Text alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        },
+        {
+          "value": "justify",
+          "label": "Justify"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "range",
+      "id": "paragraph_spacing",
+      "label": "Paragraph spacing",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "heading_spacing",
+      "label": "Heading spacing",
+      "min": 0,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Headings",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Links",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "link_hover_color",
+      "label": "Links hover",
+      "default": "#df5918"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Link style"
+    },
+    {
+      "type": "select",
+      "id": "link_decoration",
+      "label": "Link decoration",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "underline",
+          "label": "Underline"
+        }
+      ],
+      "default": "underline"
+    },
+    {
+      "type": "select",
+      "id": "link_hover_decoration",
+      "label": "Link hover decoration",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "underline",
+          "label": "Underline"
+        }
+      ],
+      "default": "underline"
+    },
+    {
+      "type": "header",
+      "content": "List style"
+    },
+    {
+      "type": "range",
+      "id": "list_indent",
+      "label": "List indent",
+      "min": 0,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "list_item_spacing",
+      "label": "List item spacing",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Blockquote style"
+    },
+    {
+      "type": "color",
+      "id": "blockquote_color",
+      "label": "Text",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "blockquote_border_color",
+      "label": "Border",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "range",
+      "id": "blockquote_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "blockquote_padding",
+      "label": "Padding",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "select",
+      "id": "blockquote_style",
+      "label": "Font style",
+      "options": [
+        {
+          "value": "normal",
+          "label": "Normal"
+        },
+        {
+          "value": "italic",
+          "label": "Italic"
+        }
+      ],
+      "default": "italic"
+    },
+    {
+      "type": "header",
+      "content": "Block layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "padding_horizontal",
+      "label": "Padding horizontal",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Rich text editor"
+    }
+  ],
+  "tag": null
+}
+{% endschema %}

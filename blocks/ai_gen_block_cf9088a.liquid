@@ -1,0 +1,502 @@
+{% doc %}
+  @prompt
+    Create button that opens a lightbox. I want customization options like size, colors, and so on. I want to add instructions in the box.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-lightbox-container-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: {{ block.settings.button_alignment }};
+    padding: {{ block.settings.section_padding }}px 0;
+  }
+
+  .ai-lightbox-trigger-{{ ai_gen_id }} {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: {{ block.settings.button_padding_vertical }}px {{ block.settings.button_padding_horizontal }}px;
+    background-color: {{ block.settings.button_bg_color }};
+    color: {{ block.settings.button_text_color }};
+    border: {{ block.settings.button_border_width }}px solid {{ block.settings.button_border_color }};
+    border-radius: {{ block.settings.button_border_radius }}px;
+    font-size: {{ block.settings.button_font_size }}px;
+    font-weight: {{ block.settings.button_font_weight }};
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+  }
+
+  .ai-lightbox-trigger-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_bg_color }};
+    color: {{ block.settings.button_hover_text_color }};
+    border-color: {{ block.settings.button_hover_border_color }};
+    transform: translateY(-2px);
+  }
+
+  .ai-lightbox-overlay-{{ ai_gen_id }} {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: {{ block.settings.overlay_color }};
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 9998;
+  }
+
+  .ai-lightbox-overlay-{{ ai_gen_id }}.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .ai-lightbox-modal-{{ ai_gen_id }} {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 90%;
+    max-width: {{ block.settings.lightbox_max_width }}px;
+    max-height: 90vh;
+    background-color: {{ block.settings.lightbox_bg_color }};
+    border-radius: {{ block.settings.lightbox_border_radius }}px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 9999;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ai-lightbox-modal-{{ ai_gen_id }}.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .ai-lightbox-header-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: {{ block.settings.lightbox_padding }}px;
+    border-bottom: 1px solid {{ block.settings.lightbox_border_color }};
+  }
+
+  .ai-lightbox-title-{{ ai_gen_id }} {
+    margin: 0;
+    font-size: {{ block.settings.title_font_size }}px;
+    color: {{ block.settings.lightbox_text_color }};
+    font-weight: 600;
+  }
+
+  .ai-lightbox-close-{{ ai_gen_id }} {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: {{ block.settings.lightbox_text_color }};
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  .ai-lightbox-close-{{ ai_gen_id }}:hover {
+    opacity: 1;
+  }
+
+  .ai-lightbox-body-{{ ai_gen_id }} {
+    padding: {{ block.settings.lightbox_padding }}px;
+    overflow-y: auto;
+    flex-grow: 1;
+    color: {{ block.settings.lightbox_text_color }};
+  }
+
+  .ai-lightbox-body-{{ ai_gen_id }} h1,
+  .ai-lightbox-body-{{ ai_gen_id }} h2,
+  .ai-lightbox-body-{{ ai_gen_id }} h3,
+  .ai-lightbox-body-{{ ai_gen_id }} h4,
+  .ai-lightbox-body-{{ ai_gen_id }} h5,
+  .ai-lightbox-body-{{ ai_gen_id }} h6 {
+    color: {{ block.settings.lightbox_text_color }};
+    margin-top: 0;
+  }
+
+  .ai-lightbox-body-{{ ai_gen_id }} p {
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .ai-lightbox-body-{{ ai_gen_id }} ul,
+  .ai-lightbox-body-{{ ai_gen_id }} ol {
+    margin-bottom: 16px;
+    padding-left: 24px;
+  }
+
+  .ai-lightbox-body-{{ ai_gen_id }} li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-lightbox-modal-{{ ai_gen_id }} {
+      width: 95%;
+      max-height: 85vh;
+    }
+
+    .ai-lightbox-header-{{ ai_gen_id }},
+    .ai-lightbox-body-{{ ai_gen_id }} {
+      padding: {{ block.settings.lightbox_padding | times: 0.75 }}px;
+    }
+
+    .ai-lightbox-title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_font_size | times: 0.85 }}px;
+    }
+
+    .ai-lightbox-trigger-{{ ai_gen_id }} {
+      font-size: {{ block.settings.button_font_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<lightbox-button-{{ ai_gen_id }} class="ai-lightbox-container-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <button class="ai-lightbox-trigger-{{ ai_gen_id }}" aria-label="{{ block.settings.button_text }}">
+    {% if block.settings.show_icon %}
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+    {% endif %}
+    {{ block.settings.button_text }}
+  </button>
+
+  <div class="ai-lightbox-overlay-{{ ai_gen_id }}"></div>
+
+  <div class="ai-lightbox-modal-{{ ai_gen_id }}" role="dialog" aria-modal="true" aria-labelledby="lightbox-title-{{ ai_gen_id }}">
+    <div class="ai-lightbox-header-{{ ai_gen_id }}">
+      <h2 class="ai-lightbox-title-{{ ai_gen_id }}" id="lightbox-title-{{ ai_gen_id }}">
+        {{ block.settings.lightbox_title }}
+      </h2>
+      <button class="ai-lightbox-close-{{ ai_gen_id }}" aria-label="Close lightbox">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="ai-lightbox-body-{{ ai_gen_id }}">
+      {{ block.settings.lightbox_content }}
+    </div>
+  </div>
+</lightbox-button-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class LightboxButton{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.trigger = this.querySelector('.ai-lightbox-trigger-{{ ai_gen_id }}');
+        this.overlay = this.querySelector('.ai-lightbox-overlay-{{ ai_gen_id }}');
+        this.modal = this.querySelector('.ai-lightbox-modal-{{ ai_gen_id }}');
+        this.closeButton = this.querySelector('.ai-lightbox-close-{{ ai_gen_id }}');
+
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.trigger.addEventListener('click', () => this.openLightbox());
+        this.closeButton.addEventListener('click', () => this.closeLightbox());
+        this.overlay.addEventListener('click', () => this.closeLightbox());
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && this.modal.classList.contains('active')) {
+            this.closeLightbox();
+          }
+        });
+      }
+
+      openLightbox() {
+        this.overlay.classList.add('active');
+        this.modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        this.modal.focus();
+      }
+
+      closeLightbox() {
+        this.overlay.classList.remove('active');
+        this.modal.classList.remove('active');
+        document.body.style.overflow = '';
+        this.trigger.focus();
+      }
+    }
+
+    customElements.define('lightbox-button-{{ ai_gen_id }}', LightboxButton{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Lightbox button",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "View instructions"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon",
+      "label": "Show icon",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "button_alignment",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "flex-end",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "button_font_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Font size",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "button_font_weight",
+      "label": "Font weight",
+      "options": [
+        {
+          "value": "400",
+          "label": "Normal"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semibold"
+        },
+        {
+          "value": "700",
+          "label": "Bold"
+        }
+      ],
+      "default": "500"
+    },
+    {
+      "type": "range",
+      "id": "button_padding_vertical",
+      "min": 8,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Vertical padding",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "button_padding_horizontal",
+      "min": 16,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "label": "Horizontal padding",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "button_border_width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "label": "Border width",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Section padding",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Button colors"
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_border_color",
+      "label": "Border",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_bg_color",
+      "label": "Hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_text_color",
+      "label": "Hover text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_border_color",
+      "label": "Hover border",
+      "default": "#333333"
+    },
+    {
+      "type": "header",
+      "content": "Lightbox"
+    },
+    {
+      "type": "text",
+      "id": "lightbox_title",
+      "label": "Title",
+      "default": "Instructions"
+    },
+    {
+      "type": "richtext",
+      "id": "lightbox_content",
+      "label": "Content",
+      "default": "<p>Add your instructions here. You can use headings, paragraphs, lists, and more to format your content.</p><h3>Example heading</h3><ul><li>First instruction step</li><li>Second instruction step</li><li>Third instruction step</li></ul>"
+    },
+    {
+      "type": "range",
+      "id": "lightbox_max_width",
+      "min": 400,
+      "max": 1000,
+      "step": 50,
+      "unit": "px",
+      "label": "Max width",
+      "default": 600
+    },
+    {
+      "type": "range",
+      "id": "lightbox_padding",
+      "min": 16,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "lightbox_border_radius",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "title_font_size",
+      "min": 16,
+      "max": 36,
+      "step": 2,
+      "unit": "px",
+      "label": "Title font size",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Lightbox colors"
+    },
+    {
+      "type": "color",
+      "id": "lightbox_bg_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "lightbox_text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "lightbox_border_color",
+      "label": "Border",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay",
+      "default": "rgba(0, 0, 0, 0.7)"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Lightbox button"
+    }
+  ]
+}
+{% endschema %}

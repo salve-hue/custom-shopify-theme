@@ -1,0 +1,645 @@
+{% doc %}
+  @prompt
+    A simple image upload, crop, and download tool. The image types allowed are JPG, JPEG, PNG, TIF, and TIFF.
+    
+    The user should be prompted to upload a file or drag and drop a file
+    
+    The tool should display the image file, and set a fixed crop window at a 49:29 aspect ratio. This ratio is based on the uploaded image's resolution. This is a fixed crop window, which means the user can move it around to crop an area, but they cannot resize it.
+    
+    Once the window is in place, the user can crop the image, and download it at full resolution to their phone or PC., the tool should have options for me to edit the layout, make it wider. The width does not work. It should be responsive to the width I choose. If I make it wider, the layout of the tool should respond to it.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-image-crop-tool-{{ ai_gen_id }} {
+    width: 100%;
+    max-width: {{ block.settings.tool_width }}px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+  }
+
+  .ai-image-crop-tool__title-{{ ai_gen_id }} {
+    text-align: center;
+    margin-bottom: 20px;
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.title_size }}px;
+  }
+
+  .ai-image-crop-tool__upload-area-{{ ai_gen_id }} {
+    border: 2px dashed {{ block.settings.border_color }};
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: {{ block.settings.upload_bg_color }};
+  }
+
+  .ai-image-crop-tool__upload-area-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.border_hover_color }};
+    background-color: {{ block.settings.upload_hover_bg_color }};
+  }
+
+  .ai-image-crop-tool__upload-area-{{ ai_gen_id }}.dragging {
+    border-color: {{ block.settings.border_hover_color }};
+    background-color: {{ block.settings.upload_hover_bg_color }};
+  }
+
+  .ai-image-crop-tool__upload-icon-{{ ai_gen_id }} {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    color: {{ block.settings.icon_color }};
+  }
+
+  .ai-image-crop-tool__upload-text-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .ai-image-crop-tool__upload-subtext-{{ ai_gen_id }} {
+    color: {{ block.settings.subtext_color }};
+    font-size: 14px;
+  }
+
+  .ai-image-crop-tool__file-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-image-crop-tool__canvas-container-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: #000000;
+  }
+
+  .ai-image-crop-tool__canvas-container-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-image-crop-tool__canvas-{{ ai_gen_id }} {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    cursor: move;
+  }
+
+  .ai-image-crop-tool__crop-window-{{ ai_gen_id }} {
+    position: absolute;
+    border: 2px solid {{ block.settings.crop_border_color }};
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    cursor: move;
+    pointer-events: none;
+  }
+
+  .ai-image-crop-tool__controls-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 20px;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .ai-image-crop-tool__controls-{{ ai_gen_id }}.active {
+    display: flex;
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }} {
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }}--secondary {
+    background-color: {{ block.settings.secondary_button_color }};
+    color: {{ block.settings.secondary_button_text_color }};
+  }
+
+  .ai-image-crop-tool__button-{{ ai_gen_id }}--secondary:hover {
+    background-color: {{ block.settings.secondary_button_hover_color }};
+  }
+
+  .ai-image-crop-tool__info-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 16px;
+    text-align: center;
+    color: {{ block.settings.subtext_color }};
+    font-size: 14px;
+  }
+
+  .ai-image-crop-tool__info-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-image-crop-tool-{{ ai_gen_id }} {
+      padding: 16px;
+    }
+
+    .ai-image-crop-tool__controls-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-image-crop-tool__button-{{ ai_gen_id }} {
+      width: 100%;
+    }
+  }
+{% endstyle %}
+
+<image-crop-tool-{{ ai_gen_id }}
+  class="ai-image-crop-tool-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.title != blank %}
+    <h2 class="ai-image-crop-tool__title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+  {% endif %}
+
+  <div class="ai-image-crop-tool__upload-area-{{ ai_gen_id }}" data-upload-area>
+    <div class="ai-image-crop-tool__upload-icon-{{ ai_gen_id }}">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+    </div>
+    <div class="ai-image-crop-tool__upload-text-{{ ai_gen_id }}">{{ block.settings.upload_text }}</div>
+    <div class="ai-image-crop-tool__upload-subtext-{{ ai_gen_id }}">{{ block.settings.upload_subtext }}</div>
+  </div>
+
+  <input
+    type="file"
+    class="ai-image-crop-tool__file-input-{{ ai_gen_id }}"
+    accept=".jpg,.jpeg,.png,.tif,.tiff"
+    data-file-input
+  >
+
+  <div class="ai-image-crop-tool__canvas-container-{{ ai_gen_id }}" data-canvas-container>
+    <canvas class="ai-image-crop-tool__canvas-{{ ai_gen_id }}" data-canvas></canvas>
+    <div class="ai-image-crop-tool__crop-window-{{ ai_gen_id }}" data-crop-window></div>
+  </div>
+
+  <div class="ai-image-crop-tool__controls-{{ ai_gen_id }}" data-controls>
+    <button class="ai-image-crop-tool__button-{{ ai_gen_id }}" data-crop-button>
+      {{ block.settings.crop_button_text }}
+    </button>
+    <button class="ai-image-crop-tool__button-{{ ai_gen_id }}" data-download-button>
+      {{ block.settings.download_button_text }}
+    </button>
+    <button class="ai-image-crop-tool__button-{{ ai_gen_id }} ai-image-crop-tool__button-{{ ai_gen_id }}--secondary" data-reset-button>
+      {{ block.settings.reset_button_text }}
+    </button>
+  </div>
+
+  <div class="ai-image-crop-tool__info-{{ ai_gen_id }}" data-info></div>
+</image-crop-tool-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ImageCropTool{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.aspectRatio = 49 / 29;
+        this.image = null;
+        this.croppedImage = null;
+        this.cropX = 0;
+        this.cropY = 0;
+        this.isDragging = false;
+        this.startX = 0;
+        this.startY = 0;
+      }
+
+      connectedCallback() {
+        this.uploadArea = this.querySelector('[data-upload-area]');
+        this.fileInput = this.querySelector('[data-file-input]');
+        this.canvasContainer = this.querySelector('[data-canvas-container]');
+        this.canvas = this.querySelector('[data-canvas]');
+        this.ctx = this.canvas.getContext('2d');
+        this.cropWindow = this.querySelector('[data-crop-window]');
+        this.controls = this.querySelector('[data-controls]');
+        this.cropButton = this.querySelector('[data-crop-button]');
+        this.downloadButton = this.querySelector('[data-download-button]');
+        this.resetButton = this.querySelector('[data-reset-button]');
+        this.info = this.querySelector('[data-info]');
+
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.uploadArea.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+
+        this.uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.add('dragging');
+        });
+
+        this.uploadArea.addEventListener('dragleave', () => {
+          this.uploadArea.classList.remove('dragging');
+        });
+
+        this.uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.remove('dragging');
+          const file = e.dataTransfer.files[0];
+          if (file && this.isValidFileType(file)) {
+            this.loadImage(file);
+          }
+        });
+
+        this.canvas.addEventListener('mousedown', (e) => this.startDrag(e));
+        this.canvas.addEventListener('mousemove', (e) => this.drag(e));
+        this.canvas.addEventListener('mouseup', () => this.endDrag());
+        this.canvas.addEventListener('mouseleave', () => this.endDrag());
+
+        this.canvas.addEventListener('touchstart', (e) => this.startDrag(e));
+        this.canvas.addEventListener('touchmove', (e) => this.drag(e));
+        this.canvas.addEventListener('touchend', () => this.endDrag());
+
+        this.cropButton.addEventListener('click', () => this.cropImage());
+        this.downloadButton.addEventListener('click', () => this.downloadImage());
+        this.resetButton.addEventListener('click', () => this.reset());
+      }
+
+      isValidFileType(file) {
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff'];
+        return validTypes.includes(file.type);
+      }
+
+      handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file && this.isValidFileType(file)) {
+          this.loadImage(file);
+        }
+      }
+
+      loadImage(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            this.image = img;
+            this.displayImage();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      displayImage() {
+        const containerWidth = this.canvasContainer.offsetWidth;
+        const scale = containerWidth / this.image.width;
+        const displayWidth = containerWidth;
+        const displayHeight = this.image.height * scale;
+
+        this.canvas.width = displayWidth;
+        this.canvas.height = displayHeight;
+
+        this.ctx.drawImage(this.image, 0, 0, displayWidth, displayHeight);
+
+        this.canvasContainer.classList.add('active');
+        this.controls.classList.add('active');
+        this.uploadArea.style.display = 'none';
+
+        this.setupCropWindow();
+      }
+
+      setupCropWindow() {
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+
+        let cropWidth = canvasWidth * 0.8;
+        let cropHeight = cropWidth / this.aspectRatio;
+
+        if (cropHeight > canvasHeight * 0.8) {
+          cropHeight = canvasHeight * 0.8;
+          cropWidth = cropHeight * this.aspectRatio;
+        }
+
+        this.cropWidth = cropWidth;
+        this.cropHeight = cropHeight;
+
+        this.cropX = (canvasWidth - cropWidth) / 2;
+        this.cropY = (canvasHeight - cropHeight) / 2;
+
+        this.updateCropWindow();
+      }
+
+      updateCropWindow() {
+        this.cropWindow.style.left = this.cropX + 'px';
+        this.cropWindow.style.top = this.cropY + 'px';
+        this.cropWindow.style.width = this.cropWidth + 'px';
+        this.cropWindow.style.height = this.cropHeight + 'px';
+      }
+
+      startDrag(e) {
+        e.preventDefault();
+        this.isDragging = true;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        this.startX = clientX - rect.left - this.cropX;
+        this.startY = clientY - rect.top - this.cropY;
+      }
+
+      drag(e) {
+        if (!this.isDragging) return;
+        e.preventDefault();
+
+        const rect = this.canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        let newX = clientX - rect.left - this.startX;
+        let newY = clientY - rect.top - this.startY;
+
+        newX = Math.max(0, Math.min(newX, this.canvas.width - this.cropWidth));
+        newY = Math.max(0, Math.min(newY, this.canvas.height - this.cropHeight));
+
+        this.cropX = newX;
+        this.cropY = newY;
+
+        this.updateCropWindow();
+      }
+
+      endDrag() {
+        this.isDragging = false;
+      }
+
+      cropImage() {
+        const scaleX = this.image.width / this.canvas.width;
+        const scaleY = this.image.height / this.canvas.height;
+
+        const sourceX = this.cropX * scaleX;
+        const sourceY = this.cropY * scaleY;
+        const sourceWidth = this.cropWidth * scaleX;
+        const sourceHeight = this.cropHeight * scaleY;
+
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = sourceWidth;
+        cropCanvas.height = sourceHeight;
+        const cropCtx = cropCanvas.getContext('2d');
+
+        cropCtx.drawImage(
+          this.image,
+          sourceX,
+          sourceY,
+          sourceWidth,
+          sourceHeight,
+          0,
+          0,
+          sourceWidth,
+          sourceHeight
+        );
+
+        this.croppedImage = cropCanvas;
+
+        this.info.textContent = 'Image cropped! Click Download to save.';
+        this.info.classList.add('active');
+      }
+
+      downloadImage() {
+        if (!this.croppedImage) {
+          this.info.textContent = 'Please crop the image first.';
+          this.info.classList.add('active');
+          return;
+        }
+
+        this.croppedImage.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'cropped-image.jpg';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          this.info.textContent = 'Image downloaded successfully!';
+        }, 'image/jpeg', 0.95);
+      }
+
+      reset() {
+        this.image = null;
+        this.croppedImage = null;
+        this.cropX = 0;
+        this.cropY = 0;
+        this.canvasContainer.classList.remove('active');
+        this.controls.classList.remove('active');
+        this.info.classList.remove('active');
+        this.uploadArea.style.display = 'block';
+        this.fileInput.value = '';
+      }
+    }
+
+    customElements.define('image-crop-tool-{{ ai_gen_id }}', ImageCropTool{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Image crop tool",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "tool_width",
+      "min": 400,
+      "max": 1200,
+      "step": 50,
+      "unit": "px",
+      "label": "Tool width",
+      "default": 800
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Border radius",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Image Crop Tool"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Title size",
+      "default": 24
+    },
+    {
+      "type": "text",
+      "id": "upload_text",
+      "label": "Upload text",
+      "default": "Click to upload or drag and drop"
+    },
+    {
+      "type": "text",
+      "id": "upload_subtext",
+      "label": "Upload subtext",
+      "default": "JPG, JPEG, PNG, TIF, or TIFF"
+    },
+    {
+      "type": "text",
+      "id": "crop_button_text",
+      "label": "Crop button text",
+      "default": "Crop Image"
+    },
+    {
+      "type": "text",
+      "id": "download_button_text",
+      "label": "Download button text",
+      "default": "Download"
+    },
+    {
+      "type": "text",
+      "id": "reset_button_text",
+      "label": "Reset button text",
+      "default": "Upload New Image"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "subtext_color",
+      "label": "Subtext",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "upload_bg_color",
+      "label": "Upload area background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "upload_hover_bg_color",
+      "label": "Upload area hover background",
+      "default": "#fafafa"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "border_hover_color",
+      "label": "Border hover",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Icon",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "crop_border_color",
+      "label": "Crop window border",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Buttons"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Primary button background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Primary button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Primary button hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Button border radius",
+      "default": 6
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_color",
+      "label": "Secondary button background",
+      "default": "#e0e0e0"
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_text_color",
+      "label": "Secondary button text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_hover_color",
+      "label": "Secondary button hover background",
+      "default": "#d0d0d0"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image crop tool"
+    }
+  ]
+}
+{% endschema %}

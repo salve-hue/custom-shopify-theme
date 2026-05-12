@@ -1,0 +1,789 @@
+{% doc %}
+  @prompt
+    Create a bulk discount table with the following information. It should say Buy More, Save More. Don't list a price. Make it a two column table.
+     
+    Buy More, Save More!
+     
+     
+    Buy 5 for 5% Off
+    Buy 10 for 10% Off
+    Buy 15 for 15% Off
+    Most Popular
+    Buy 20 for 20% Off
+    Buy 25 for 30% Off
+    Buy 30 for 40% Off, Make it a list in two columns, with the left column having the Buy X, and the right column next to it having X% off, MAke it more of a table with two columns., Make this table fully editable so I can edit each column and row, including the Most Popular tag and fonts and colors and sizes.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-bulk-discount-table-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+  }
+
+  .ai-bulk-discount-table__container-{{ ai_gen_id }} {
+    width: {{ block.settings.desktop_width_percent }}%;
+    margin: 0 auto;
+  }
+
+  .ai-bulk-discount-table__title-{{ ai_gen_id }} {
+    text-align: {{ block.settings.title_alignment }};
+    color: {{ block.settings.title_color }};
+    margin-bottom: {{ block.settings.title_spacing }}px;
+    font-size: {{ block.settings.title_size }}px;
+    font-weight: {{ block.settings.title_weight }};
+  }
+
+  .ai-bulk-discount-table__table-{{ ai_gen_id }} {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: {{ block.settings.table_background }};
+    border: {{ block.settings.table_border_width }}px solid {{ block.settings.table_border_color }};
+    border-radius: {{ block.settings.table_border_radius }}px;
+    overflow: hidden;
+  }
+
+  .ai-bulk-discount-table__header-{{ ai_gen_id }} {
+    background-color: {{ block.settings.header_background }};
+  }
+
+  .ai-bulk-discount-table__header-cell-{{ ai_gen_id }} {
+    padding: {{ block.settings.header_padding }}px;
+    color: {{ block.settings.header_text_color }};
+    font-size: {{ block.settings.header_size }}px;
+    font-weight: {{ block.settings.header_weight }};
+    text-align: left;
+    border-bottom: {{ block.settings.header_border_width }}px solid {{ block.settings.header_border_color }};
+  }
+
+  .ai-bulk-discount-table__header-cell-{{ ai_gen_id }}:last-child {
+    text-align: right;
+  }
+
+  .ai-bulk-discount-table__row-{{ ai_gen_id }} {
+    border-bottom: {{ block.settings.row_border_width }}px solid {{ block.settings.row_border_color }};
+    transition: background-color 0.2s ease;
+  }
+
+  .ai-bulk-discount-table__row-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.row_hover_background }};
+  }
+
+  .ai-bulk-discount-table__row-{{ ai_gen_id }}:last-child {
+    border-bottom: none;
+  }
+
+  .ai-bulk-discount-table__row--popular-{{ ai_gen_id }} {
+    background-color: {{ block.settings.popular_background }};
+    position: relative;
+  }
+
+  .ai-bulk-discount-table__row--popular-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.popular_hover_background }};
+  }
+
+  .ai-bulk-discount-table__cell-{{ ai_gen_id }} {
+    padding: {{ block.settings.cell_padding }}px;
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.text_size }}px;
+    font-weight: {{ block.settings.text_weight }};
+  }
+
+  .ai-bulk-discount-table__quantity-{{ ai_gen_id }} {
+    text-align: left;
+  }
+
+  .ai-bulk-discount-table__discount-{{ ai_gen_id }} {
+    font-weight: {{ block.settings.discount_weight }};
+    color: {{ block.settings.discount_color }};
+    text-align: right;
+    font-size: {{ block.settings.discount_size }}px;
+  }
+
+  .ai-bulk-discount-table__badge-{{ ai_gen_id }} {
+    display: inline-block;
+    background-color: {{ block.settings.badge_background }};
+    color: {{ block.settings.badge_text_color }};
+    padding: {{ block.settings.badge_padding_vertical }}px {{ block.settings.badge_padding_horizontal }}px;
+    border-radius: {{ block.settings.badge_border_radius }}px;
+    font-size: {{ block.settings.badge_font_size }}px;
+    font-weight: {{ block.settings.badge_font_weight }};
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-bulk-discount-table__container-{{ ai_gen_id }} {
+      width: 100%;
+    }
+
+    .ai-bulk-discount-table__title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_size | times: 0.8 }}px;
+    }
+
+    .ai-bulk-discount-table__header-cell-{{ ai_gen_id }} {
+      font-size: {{ block.settings.header_size | times: 0.9 }}px;
+      padding: {{ block.settings.header_padding | times: 0.8 }}px;
+    }
+
+    .ai-bulk-discount-table__cell-{{ ai_gen_id }} {
+      font-size: {{ block.settings.text_size | times: 0.9 }}px;
+      padding: {{ block.settings.cell_padding | times: 0.8 }}px;
+    }
+
+    .ai-bulk-discount-table__discount-{{ ai_gen_id }} {
+      font-size: {{ block.settings.discount_size | times: 0.9 }}px;
+    }
+
+    .ai-bulk-discount-table__badge-{{ ai_gen_id }} {
+      font-size: {{ block.settings.badge_font_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<div class="ai-bulk-discount-table-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-bulk-discount-table__container-{{ ai_gen_id }}">
+    {% if block.settings.title != blank %}
+      <h2 class="ai-bulk-discount-table__title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+    {% endif %}
+
+    <table class="ai-bulk-discount-table__table-{{ ai_gen_id }}">
+      {% if block.settings.show_headers %}
+        <thead class="ai-bulk-discount-table__header-{{ ai_gen_id }}">
+          <tr>
+            <th class="ai-bulk-discount-table__header-cell-{{ ai_gen_id }}">{{ block.settings.quantity_header }}</th>
+            <th class="ai-bulk-discount-table__header-cell-{{ ai_gen_id }}">{{ block.settings.discount_header }}</th>
+          </tr>
+        </thead>
+      {% endif %}
+      <tbody>
+        {% if block.settings.show_row_1 %}
+          <tr class="ai-bulk-discount-table__row-{{ ai_gen_id }} {% if block.settings.row_1_is_popular %}ai-bulk-discount-table__row--popular-{{ ai_gen_id }}{% endif %}">
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__quantity-{{ ai_gen_id }}">
+              {{ block.settings.row_1_quantity }}
+              {% if block.settings.row_1_is_popular and block.settings.show_badge %}
+                <span class="ai-bulk-discount-table__badge-{{ ai_gen_id }}">{{ block.settings.badge_text }}</span>
+              {% endif %}
+            </td>
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__discount-{{ ai_gen_id }}">{{ block.settings.row_1_discount }}</td>
+          </tr>
+        {% endif %}
+
+        {% if block.settings.show_row_2 %}
+          <tr class="ai-bulk-discount-table__row-{{ ai_gen_id }} {% if block.settings.row_2_is_popular %}ai-bulk-discount-table__row--popular-{{ ai_gen_id }}{% endif %}">
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__quantity-{{ ai_gen_id }}">
+              {{ block.settings.row_2_quantity }}
+              {% if block.settings.row_2_is_popular and block.settings.show_badge %}
+                <span class="ai-bulk-discount-table__badge-{{ ai_gen_id }}">{{ block.settings.badge_text }}</span>
+              {% endif %}
+            </td>
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__discount-{{ ai_gen_id }}">{{ block.settings.row_2_discount }}</td>
+          </tr>
+        {% endif %}
+
+        {% if block.settings.show_row_3 %}
+          <tr class="ai-bulk-discount-table__row-{{ ai_gen_id }} {% if block.settings.row_3_is_popular %}ai-bulk-discount-table__row--popular-{{ ai_gen_id }}{% endif %}">
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__quantity-{{ ai_gen_id }}">
+              {{ block.settings.row_3_quantity }}
+              {% if block.settings.row_3_is_popular and block.settings.show_badge %}
+                <span class="ai-bulk-discount-table__badge-{{ ai_gen_id }}">{{ block.settings.badge_text }}</span>
+              {% endif %}
+            </td>
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__discount-{{ ai_gen_id }}">{{ block.settings.row_3_discount }}</td>
+          </tr>
+        {% endif %}
+
+        {% if block.settings.show_row_4 %}
+          <tr class="ai-bulk-discount-table__row-{{ ai_gen_id }} {% if block.settings.row_4_is_popular %}ai-bulk-discount-table__row--popular-{{ ai_gen_id }}{% endif %}">
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__quantity-{{ ai_gen_id }}">
+              {{ block.settings.row_4_quantity }}
+              {% if block.settings.row_4_is_popular and block.settings.show_badge %}
+                <span class="ai-bulk-discount-table__badge-{{ ai_gen_id }}">{{ block.settings.badge_text }}</span>
+              {% endif %}
+            </td>
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__discount-{{ ai_gen_id }}">{{ block.settings.row_4_discount }}</td>
+          </tr>
+        {% endif %}
+
+        {% if block.settings.show_row_5 %}
+          <tr class="ai-bulk-discount-table__row-{{ ai_gen_id }} {% if block.settings.row_5_is_popular %}ai-bulk-discount-table__row--popular-{{ ai_gen_id }}{% endif %}">
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__quantity-{{ ai_gen_id }}">
+              {{ block.settings.row_5_quantity }}
+              {% if block.settings.row_5_is_popular and block.settings.show_badge %}
+                <span class="ai-bulk-discount-table__badge-{{ ai_gen_id }}">{{ block.settings.badge_text }}</span>
+              {% endif %}
+            </td>
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__discount-{{ ai_gen_id }}">{{ block.settings.row_5_discount }}</td>
+          </tr>
+        {% endif %}
+
+        {% if block.settings.show_row_6 %}
+          <tr class="ai-bulk-discount-table__row-{{ ai_gen_id }} {% if block.settings.row_6_is_popular %}ai-bulk-discount-table__row--popular-{{ ai_gen_id }}{% endif %}">
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__quantity-{{ ai_gen_id }}">
+              {{ block.settings.row_6_quantity }}
+              {% if block.settings.row_6_is_popular and block.settings.show_badge %}
+                <span class="ai-bulk-discount-table__badge-{{ ai_gen_id }}">{{ block.settings.badge_text }}</span>
+              {% endif %}
+            </td>
+            <td class="ai-bulk-discount-table__cell-{{ ai_gen_id }} ai-bulk-discount-table__discount-{{ ai_gen_id }}">{{ block.settings.row_6_discount }}</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Bulk discount table",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Title"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Buy More, Save More!"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "label": "Size",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "title_weight",
+      "label": "Weight",
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "default": 700
+    },
+    {
+      "type": "select",
+      "id": "title_alignment",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "title_spacing",
+      "label": "Bottom spacing",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "header",
+      "content": "Table style"
+    },
+    {
+      "type": "color",
+      "id": "table_background",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "table_border_color",
+      "label": "Border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "range",
+      "id": "table_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "table_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Table headers"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_headers",
+      "label": "Show headers",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "quantity_header",
+      "label": "Quantity header",
+      "default": "Quantity"
+    },
+    {
+      "type": "text",
+      "id": "discount_header",
+      "label": "Discount header",
+      "default": "Discount"
+    },
+    {
+      "type": "color",
+      "id": "header_background",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "header_text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "header_size",
+      "label": "Text size",
+      "min": 12,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "header_weight",
+      "label": "Text weight",
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "default": 700
+    },
+    {
+      "type": "range",
+      "id": "header_padding",
+      "label": "Padding",
+      "min": 8,
+      "max": 32,
+      "step": 4,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "color",
+      "id": "header_border_color",
+      "label": "Border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "range",
+      "id": "header_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 2
+    },
+    {
+      "type": "header",
+      "content": "Table rows"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "label": "Text size",
+      "min": 12,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "text_weight",
+      "label": "Text weight",
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "default": 600
+    },
+    {
+      "type": "color",
+      "id": "discount_color",
+      "label": "Discount color",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "range",
+      "id": "discount_size",
+      "label": "Discount size",
+      "min": 14,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "discount_weight",
+      "label": "Discount weight",
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "default": 700
+    },
+    {
+      "type": "range",
+      "id": "cell_padding",
+      "label": "Cell padding",
+      "min": 8,
+      "max": 32,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "row_border_color",
+      "label": "Row border color",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "range",
+      "id": "row_border_width",
+      "label": "Row border width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "color",
+      "id": "row_hover_background",
+      "label": "Hover background",
+      "default": "#f9f9f9"
+    },
+    {
+      "type": "header",
+      "content": "Popular row highlight"
+    },
+    {
+      "type": "color",
+      "id": "popular_background",
+      "label": "Background",
+      "default": "#e6f7ff"
+    },
+    {
+      "type": "color",
+      "id": "popular_hover_background",
+      "label": "Hover background",
+      "default": "#d6f0ff"
+    },
+    {
+      "type": "header",
+      "content": "Badge"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_badge",
+      "label": "Show badge",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Badge text",
+      "default": "Most Popular"
+    },
+    {
+      "type": "color",
+      "id": "badge_background",
+      "label": "Background",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "badge_text_color",
+      "label": "Text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "badge_font_size",
+      "label": "Font size",
+      "min": 8,
+      "max": 16,
+      "step": 1,
+      "unit": "px",
+      "default": 11
+    },
+    {
+      "type": "range",
+      "id": "badge_font_weight",
+      "label": "Font weight",
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "default": 600
+    },
+    {
+      "type": "range",
+      "id": "badge_padding_vertical",
+      "label": "Vertical padding",
+      "min": 2,
+      "max": 12,
+      "step": 2,
+      "unit": "px",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "badge_padding_horizontal",
+      "label": "Horizontal padding",
+      "min": 4,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "badge_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Row 1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_row_1",
+      "label": "Show row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "row_1_quantity",
+      "label": "Quantity text",
+      "default": "Buy 5"
+    },
+    {
+      "type": "text",
+      "id": "row_1_discount",
+      "label": "Discount text",
+      "default": "5% Off"
+    },
+    {
+      "type": "checkbox",
+      "id": "row_1_is_popular",
+      "label": "Mark as popular",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Row 2"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_row_2",
+      "label": "Show row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "row_2_quantity",
+      "label": "Quantity text",
+      "default": "Buy 10"
+    },
+    {
+      "type": "text",
+      "id": "row_2_discount",
+      "label": "Discount text",
+      "default": "10% Off"
+    },
+    {
+      "type": "checkbox",
+      "id": "row_2_is_popular",
+      "label": "Mark as popular",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Row 3"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_row_3",
+      "label": "Show row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "row_3_quantity",
+      "label": "Quantity text",
+      "default": "Buy 15"
+    },
+    {
+      "type": "text",
+      "id": "row_3_discount",
+      "label": "Discount text",
+      "default": "15% Off"
+    },
+    {
+      "type": "checkbox",
+      "id": "row_3_is_popular",
+      "label": "Mark as popular",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Row 4"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_row_4",
+      "label": "Show row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "row_4_quantity",
+      "label": "Quantity text",
+      "default": "Buy 20"
+    },
+    {
+      "type": "text",
+      "id": "row_4_discount",
+      "label": "Discount text",
+      "default": "20% Off"
+    },
+    {
+      "type": "checkbox",
+      "id": "row_4_is_popular",
+      "label": "Mark as popular",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Row 5"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_row_5",
+      "label": "Show row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "row_5_quantity",
+      "label": "Quantity text",
+      "default": "Buy 25"
+    },
+    {
+      "type": "text",
+      "id": "row_5_discount",
+      "label": "Discount text",
+      "default": "30% Off"
+    },
+    {
+      "type": "checkbox",
+      "id": "row_5_is_popular",
+      "label": "Mark as popular",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Row 6"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_row_6",
+      "label": "Show row",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "row_6_quantity",
+      "label": "Quantity text",
+      "default": "Buy 30"
+    },
+    {
+      "type": "text",
+      "id": "row_6_discount",
+      "label": "Discount text",
+      "default": "40% Off"
+    },
+    {
+      "type": "checkbox",
+      "id": "row_6_is_popular",
+      "label": "Mark as popular",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bulk discount table"
+    }
+  ]
+}
+{% endschema %}

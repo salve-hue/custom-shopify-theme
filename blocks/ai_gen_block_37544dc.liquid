@@ -1,0 +1,468 @@
+{% doc %}
+  @prompt
+    A contact form with the following fields: 
+    
+    Field: Name (first, last) and required. 
+    Field: Email address and required. 
+    Field: Product (create a dropdown list with the following products): Ovation: 24" x 14" standard playmat
+    Triumph: 28" x 14" extended playmat
+    Commander New Player
+    Commander New Player EX
+    New Player Keywords
+    New Player Keywords EX
+    Pokemon Zones
+    Pokemon Zones EX
+    Pokemon Turns & Conditions
+    Pokemon Turns & Conditions EX
+    Tiro: 10" x 8" mousepad
+    Veteranus: 12" x 8" mousepad
+    Gladiator: 18" x 12" mousepad
+    Victor: 24" x 12" deskmat
+    Secundus: 28" x 12" deskmat
+    Primus: 32" x 12" deskmat
+    Board Game mat (enter below)
+    Card Game mat (enter below)
+    TCG mat (enter below)
+    
+    Field: If you chose a board game, card game, or TCG mat option, enter it below. Placeholder: Ex. Riftbound TCG
+    Field: Bulk Quantity (required, must be 100+). Placeholder: 150
+    Field: Number of designs. Placeholder: 50 Blue, 50 Green, 25 Red
+    Field: When do you need them? (date input, dropdown calendar)
+    Field: Special Instructions (paragraph user can submit extra details), Change the placeholder for bulk quantity to say Ex. 150, and the placeholder for Number of designs to say Ex. 50 Blue, 50 Green, 25 Red
+    
+    On success, direct customers to this page: https://www.rubicongamesupplies.com/pages/thank-you
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-bulk-order-form-{{ ai_gen_id }} {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+
+  .ai-bulk-order-form__container-{{ ai_gen_id }} {
+    background-color: {{ block.settings.background_color }};
+    padding: 40px;
+    border-radius: {{ block.settings.border_radius }}px;
+  }
+
+  .ai-bulk-order-form__heading-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    margin: 0 0 24px;
+    font-size: 32px;
+  }
+
+  .ai-bulk-order-form__field-{{ ai_gen_id }} {
+    margin-bottom: 24px;
+  }
+
+  .ai-bulk-order-form__label-{{ ai_gen_id }} {
+    display: block;
+    color: {{ block.settings.text_color }};
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .ai-bulk-order-form__required-{{ ai_gen_id }} {
+    color: {{ block.settings.error_color }};
+    margin-left: 4px;
+  }
+
+  .ai-bulk-order-form__input-{{ ai_gen_id }},
+  .ai-bulk-order-form__select-{{ ai_gen_id }},
+  .ai-bulk-order-form__textarea-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.input_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: {{ block.settings.input_background_color }};
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-bulk-order-form__input-{{ ai_gen_id }}:focus,
+  .ai-bulk-order-form__select-{{ ai_gen_id }}:focus,
+  .ai-bulk-order-form__textarea-{{ ai_gen_id }}:focus {
+    outline: 2px solid {{ block.settings.primary_color }};
+    outline-offset: 2px;
+  }
+
+  .ai-bulk-order-form__textarea-{{ ai_gen_id }} {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .ai-bulk-order-form__name-group-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .ai-bulk-order-form__button-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 16px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-bulk-order-form__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-bulk-order-form__error-{{ ai_gen_id }} {
+    color: {{ block.settings.error_color }};
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .ai-bulk-order-form__success-{{ ai_gen_id }} {
+    color: {{ block.settings.success_color }};
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-bulk-order-form__container-{{ ai_gen_id }} {
+      padding: 24px;
+    }
+
+    .ai-bulk-order-form__name-group-{{ ai_gen_id }} {
+      grid-template-columns: 1fr;
+    }
+  }
+{% endstyle %}
+
+<bulk-order-form-{{ ai_gen_id }}
+  class="ai-bulk-order-form-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-bulk-order-form__container-{{ ai_gen_id }}">
+    {%- if block.settings.heading != blank -%}
+      <h2 class="ai-bulk-order-form__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+    {%- endif -%}
+
+    {%- form 'contact' -%}
+      {%- if form.posted_successfully? -%}
+        <script>
+          window.location.href = 'https://www.rubicongamesupplies.com/pages/thank-you';
+        </script>
+      {%- endif -%}
+
+      <input type="hidden" name="contact[form_type]" value="Bulk Order Form">
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}">
+          Name<span class="ai-bulk-order-form__required-{{ ai_gen_id }}">*</span>
+        </label>
+        <div class="ai-bulk-order-form__name-group-{{ ai_gen_id }}">
+          <input
+            type="text"
+            name="contact[first_name]"
+            class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+            placeholder="First name"
+            required
+            aria-label="First name"
+          >
+          <input
+            type="text"
+            name="contact[last_name]"
+            class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+            placeholder="Last name"
+            required
+            aria-label="Last name"
+          >
+        </div>
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="email-{{ ai_gen_id }}">
+          Email address<span class="ai-bulk-order-form__required-{{ ai_gen_id }}">*</span>
+        </label>
+        <input
+          type="email"
+          id="email-{{ ai_gen_id }}"
+          name="contact[email]"
+          class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+          placeholder="your@email.com"
+          required
+          autocomplete="email"
+          {% if form.errors %}
+            aria-invalid="true"
+            aria-describedby="email-error-{{ ai_gen_id }}"
+          {% endif %}
+        >
+        {%- if form.errors -%}
+          <div id="email-error-{{ ai_gen_id }}" class="ai-bulk-order-form__error-{{ ai_gen_id }}">
+            {{ form.errors.messages.email }}
+          </div>
+        {%- endif -%}
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="product-{{ ai_gen_id }}">
+          Product<span class="ai-bulk-order-form__required-{{ ai_gen_id }}">*</span>
+        </label>
+        <select
+          id="product-{{ ai_gen_id }}"
+          name="contact[product]"
+          class="ai-bulk-order-form__select-{{ ai_gen_id }}"
+          required
+        >
+          <option value="">Select a product</option>
+          <option value="Ovation: 24&quot; x 14&quot; standard playmat">Ovation: 24" x 14" standard playmat</option>
+          <option value="Triumph: 28&quot; x 14&quot; extended playmat">Triumph: 28" x 14" extended playmat</option>
+          <option value="Commander New Player">Commander New Player</option>
+          <option value="Commander New Player EX">Commander New Player EX</option>
+          <option value="New Player Keywords">New Player Keywords</option>
+          <option value="New Player Keywords EX">New Player Keywords EX</option>
+          <option value="Pokemon Zones">Pokemon Zones</option>
+          <option value="Pokemon Zones EX">Pokemon Zones EX</option>
+          <option value="Pokemon Turns & Conditions">Pokemon Turns & Conditions</option>
+          <option value="Pokemon Turns & Conditions EX">Pokemon Turns & Conditions EX</option>
+          <option value="Tiro: 10&quot; x 8&quot; mousepad">Tiro: 10" x 8" mousepad</option>
+          <option value="Veteranus: 12&quot; x 8&quot; mousepad">Veteranus: 12" x 8" mousepad</option>
+          <option value="Gladiator: 18&quot; x 12&quot; mousepad">Gladiator: 18" x 12" mousepad</option>
+          <option value="Victor: 24&quot; x 12&quot; deskmat">Victor: 24" x 12" deskmat</option>
+          <option value="Secundus: 28&quot; x 12&quot; deskmat">Secundus: 28" x 12" deskmat</option>
+          <option value="Primus: 32&quot; x 12&quot; deskmat">Primus: 32" x 12" deskmat</option>
+          <option value="Board Game mat (enter below)">Board Game mat (enter below)</option>
+          <option value="Card Game mat (enter below)">Card Game mat (enter below)</option>
+          <option value="TCG mat (enter below)">TCG mat (enter below)</option>
+        </select>
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="custom-mat-{{ ai_gen_id }}">
+          If you chose a board game, card game, or TCG mat option, enter it below
+        </label>
+        <input
+          type="text"
+          id="custom-mat-{{ ai_gen_id }}"
+          name="contact[custom_mat]"
+          class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+          placeholder="Ex. Riftbound TCG"
+        >
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="quantity-{{ ai_gen_id }}">
+          Bulk Quantity (100+ required)<span class="ai-bulk-order-form__required-{{ ai_gen_id }}">*</span>
+        </label>
+        <input
+          type="number"
+          id="quantity-{{ ai_gen_id }}"
+          name="contact[quantity]"
+          class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+          placeholder="Ex. 150"
+          min="100"
+          required
+        >
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="designs-{{ ai_gen_id }}">
+          Number of designs
+        </label>
+        <input
+          type="text"
+          id="designs-{{ ai_gen_id }}"
+          name="contact[designs]"
+          class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+          placeholder="Ex. 50 Blue, 50 Green, 25 Red"
+        >
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="date-{{ ai_gen_id }}">
+          When do you need them?
+        </label>
+        <input
+          type="date"
+          id="date-{{ ai_gen_id }}"
+          name="contact[needed_date]"
+          class="ai-bulk-order-form__input-{{ ai_gen_id }}"
+        >
+      </div>
+
+      <div class="ai-bulk-order-form__field-{{ ai_gen_id }}">
+        <label class="ai-bulk-order-form__label-{{ ai_gen_id }}" for="instructions-{{ ai_gen_id }}">
+          Special Instructions
+        </label>
+        <textarea
+          id="instructions-{{ ai_gen_id }}"
+          name="contact[body]"
+          class="ai-bulk-order-form__textarea-{{ ai_gen_id }}"
+          placeholder="Enter any special instructions or details here..."
+        ></textarea>
+      </div>
+
+      <button type="submit" class="ai-bulk-order-form__button-{{ ai_gen_id }}">
+        {{ block.settings.button_text }}
+      </button>
+    {%- endform -%}
+  </div>
+</bulk-order-form-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class BulkOrderForm{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        const form = this.querySelector('form');
+        const quantityInput = this.querySelector('#quantity-{{ ai_gen_id }}');
+
+        if (quantityInput) {
+          quantityInput.addEventListener('input', function() {
+            if (this.value && parseInt(this.value) < 100) {
+              this.setCustomValidity('Minimum quantity is 100');
+            } else {
+              this.setCustomValidity('');
+            }
+          });
+        }
+      }
+    }
+
+    customElements.define('bulk-order-form-{{ ai_gen_id }}', BulkOrderForm{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Bulk order form",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Bulk Order Form"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Submit Order Request"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "input_background_color",
+      "label": "Input background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Input border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Button hover background",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary accent",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "error_color",
+      "label": "Error",
+      "default": "#D82C0D"
+    },
+    {
+      "type": "color",
+      "id": "success_color",
+      "label": "Success",
+      "default": "#008060"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Form border radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "input_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Input border radius",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Button border radius",
+      "default": 6
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bulk order form"
+    }
+  ]
+}
+{% endschema %}

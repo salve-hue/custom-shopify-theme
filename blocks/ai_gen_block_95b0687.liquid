@@ -1,0 +1,838 @@
+{% doc %}
+  @prompt
+    An image upload tool. The user can upload a local image or load one from a URL. Once loaded, it displays the image and the user can use a crop tool at a 49:29 aspect ratio so it fits on a playmat. The user can select various overlay images that would go on top of their chosen image. Those overlays can be changed and linked by me, the admin. , When the image is uploaded and displayed, don't squish images to fit. Allow users to move the image around to fit within the 49:29 aspect ratio window. Show them a bleed area, which can be a 30% opaque red border around the entire image, 75 pixels wide on each side (at 300 dpi). So uploaded images should be converted to 300 dpi so this shows accurately. Then add a safe zone 40% opaque yellow border inside the red board at 150 pixels on each side at 300 dpi.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-image-upload-{{ ai_gen_id }} {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background-color: {{ block.settings.background_color }};
+  }
+
+  .ai-image-upload__container-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .ai-image-upload__title-{{ ai_gen_id }} {
+    font-size: 32px;
+    font-weight: 700;
+    color: {{ block.settings.text_color }};
+    margin: 0 0 8px;
+    text-align: center;
+  }
+
+  .ai-image-upload__description-{{ ai_gen_id }} {
+    font-size: 16px;
+    color: {{ block.settings.text_color }};
+    opacity: 0.8;
+    text-align: center;
+    margin: 0 0 24px;
+  }
+
+  .ai-image-upload__controls-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    background-color: {{ block.settings.controls_bg_color }};
+    border-radius: 12px;
+    border: 1px solid {{ block.settings.border_color }};
+  }
+
+  .ai-image-upload__control-group-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ai-image-upload__label-{{ ai_gen_id }} {
+    font-size: 14px;
+    font-weight: 600;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-image-upload__input-row-{{ ai_gen_id }} {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ai-image-upload__file-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-image-upload__button-{{ ai_gen_id }} {
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-image-upload__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .ai-image-upload__button--secondary-{{ ai_gen_id }} {
+    background-color: {{ block.settings.secondary_button_color }};
+    color: {{ block.settings.secondary_button_text_color }};
+  }
+
+  .ai-image-upload__button--secondary-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.secondary_button_hover_color }};
+  }
+
+  .ai-image-upload__url-input-{{ ai_gen_id }} {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .ai-image-upload__canvas-container-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    background-color: #f5f5f5;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid {{ block.settings.border_color }};
+  }
+
+  .ai-image-upload__canvas-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    padding-bottom: 59.18%;
+    background-color: #ffffff;
+  }
+
+  .ai-image-upload__canvas-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: move;
+  }
+
+  .ai-image-upload__empty-state-{{ ai_gen_id }} {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #999;
+    pointer-events: none;
+  }
+
+  .ai-image-upload__empty-icon-{{ ai_gen_id }} {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    opacity: 0.3;
+  }
+
+  .ai-image-upload__empty-text-{{ ai_gen_id }} {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .ai-image-upload__overlay-selector-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ai-image-upload__overlay-option-{{ ai_gen_id }} {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border: 2px solid {{ block.settings.border_color }};
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .ai-image-upload__overlay-option-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.button_color }};
+    transform: scale(1.05);
+  }
+
+  .ai-image-upload__overlay-option-{{ ai_gen_id }}.active {
+    border-color: {{ block.settings.button_color }};
+    border-width: 3px;
+  }
+
+  .ai-image-upload__overlay-image-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ai-image-upload__overlay-none-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #f5f5f5;
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+  }
+
+  .ai-image-upload__crop-controls-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ai-image-upload__zoom-control-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .ai-image-upload__zoom-slider-{{ ai_gen_id }} {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: {{ block.settings.border_color }};
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  .ai-image-upload__zoom-slider-{{ ai_gen_id }}::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: {{ block.settings.button_color }};
+    cursor: pointer;
+  }
+
+  .ai-image-upload__zoom-slider-{{ ai_gen_id }}::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: {{ block.settings.button_color }};
+    cursor: pointer;
+    border: none;
+  }
+
+  .ai-image-upload__download-section-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: center;
+    padding-top: 16px;
+  }
+
+  .ai-image-upload__legend-{{ ai_gen_id }} {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 16px;
+    background-color: {{ block.settings.controls_bg_color }};
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .ai-image-upload__legend-item-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-image-upload__legend-color-{{ ai_gen_id }} {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid {{ block.settings.border_color }};
+  }
+
+  .ai-image-upload__legend-color--bleed-{{ ai_gen_id }} {
+    background-color: rgba(255, 0, 0, 0.3);
+  }
+
+  .ai-image-upload__legend-color--safe-{{ ai_gen_id }} {
+    background-color: rgba(255, 255, 0, 0.4);
+  }
+
+  @media screen and (max-width: 768px) {
+    .ai-image-upload__input-row-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .ai-image-upload__overlay-selector-{{ ai_gen_id }} {
+      justify-content: center;
+    }
+
+    .ai-image-upload__crop-controls-{{ ai_gen_id }} {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+{% endstyle %}
+
+<image-upload-tool-{{ ai_gen_id }}
+  class="ai-image-upload-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-image-upload__container-{{ ai_gen_id }}">
+    {% if block.settings.title != blank %}
+      <h2 class="ai-image-upload__title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+    {% endif %}
+
+    {% if block.settings.description != blank %}
+      <p class="ai-image-upload__description-{{ ai_gen_id }}">{{ block.settings.description }}</p>
+    {% endif %}
+
+    <div class="ai-image-upload__controls-{{ ai_gen_id }}">
+      <div class="ai-image-upload__control-group-{{ ai_gen_id }}">
+        <label class="ai-image-upload__label-{{ ai_gen_id }}">Upload Image</label>
+        <div class="ai-image-upload__input-row-{{ ai_gen_id }}">
+          <input
+            type="file"
+            accept="image/*"
+            class="ai-image-upload__file-input-{{ ai_gen_id }}"
+            id="file-input-{{ ai_gen_id }}"
+          >
+          <button
+            class="ai-image-upload__button-{{ ai_gen_id }}"
+            id="upload-button-{{ ai_gen_id }}"
+          >
+            Choose File
+          </button>
+          <input
+            type="text"
+            placeholder="Or paste image URL"
+            class="ai-image-upload__url-input-{{ ai_gen_id }}"
+            id="url-input-{{ ai_gen_id }}"
+          >
+          <button
+            class="ai-image-upload__button-{{ ai_gen_id }} ai-image-upload__button--secondary-{{ ai_gen_id }}"
+            id="load-url-button-{{ ai_gen_id }}"
+          >
+            Load URL
+          </button>
+        </div>
+      </div>
+
+      {% if block.settings.show_overlays %}
+        <div class="ai-image-upload__control-group-{{ ai_gen_id }}">
+          <label class="ai-image-upload__label-{{ ai_gen_id }}">Select Overlay</label>
+          <div class="ai-image-upload__overlay-selector-{{ ai_gen_id }}">
+            <div
+              class="ai-image-upload__overlay-option-{{ ai_gen_id }} active"
+              data-overlay="none"
+            >
+              <div class="ai-image-upload__overlay-none-{{ ai_gen_id }}">None</div>
+            </div>
+            {% for i in (1..5) %}
+              {% liquid
+                assign overlay_key = 'overlay_' | append: i
+                assign overlay_image = block.settings[overlay_key]
+                assign overlay_url_key = 'overlay_' | append: i | append: '_url'
+                assign overlay_url = block.settings[overlay_url_key]
+              %}
+              {% if overlay_image != blank %}
+                <div
+                  class="ai-image-upload__overlay-option-{{ ai_gen_id }}"
+                  data-overlay="{{ i }}"
+                  data-url="{{ overlay_url }}"
+                >
+                  <img
+                    src="{{ overlay_image | image_url: width: 200 }}"
+                    alt="Overlay {{ i }}"
+                    class="ai-image-upload__overlay-image-{{ ai_gen_id }}"
+                    loading="lazy"
+                  >
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="ai-image-upload__control-group-{{ ai_gen_id }}">
+        <label class="ai-image-upload__label-{{ ai_gen_id }}">Adjust Image</label>
+        <div class="ai-image-upload__crop-controls-{{ ai_gen_id }}">
+          <div class="ai-image-upload__zoom-control-{{ ai_gen_id }}">
+            <span>Zoom:</span>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              value="1"
+              class="ai-image-upload__zoom-slider-{{ ai_gen_id }}"
+              id="zoom-slider-{{ ai_gen_id }}"
+            >
+          </div>
+          <button
+            class="ai-image-upload__button-{{ ai_gen_id }} ai-image-upload__button--secondary-{{ ai_gen_id }}"
+            id="reset-button-{{ ai_gen_id }}"
+          >
+            Reset Position
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-image-upload__legend-{{ ai_gen_id }}">
+      <div class="ai-image-upload__legend-item-{{ ai_gen_id }}">
+        <div class="ai-image-upload__legend-color-{{ ai_gen_id }} ai-image-upload__legend-color--bleed-{{ ai_gen_id }}"></div>
+        <span>Bleed Area (75px at 300 DPI)</span>
+      </div>
+      <div class="ai-image-upload__legend-item-{{ ai_gen_id }}">
+        <div class="ai-image-upload__legend-color-{{ ai_gen_id }} ai-image-upload__legend-color--safe-{{ ai_gen_id }}"></div>
+        <span>Safe Zone (150px at 300 DPI)</span>
+      </div>
+    </div>
+
+    <div class="ai-image-upload__canvas-container-{{ ai_gen_id }}">
+      <div class="ai-image-upload__canvas-wrapper-{{ ai_gen_id }}">
+        <canvas
+          class="ai-image-upload__canvas-{{ ai_gen_id }}"
+          id="canvas-{{ ai_gen_id }}"
+        ></canvas>
+        <div class="ai-image-upload__empty-state-{{ ai_gen_id }}" id="empty-state-{{ ai_gen_id }}">
+          <svg class="ai-image-upload__empty-icon-{{ ai_gen_id }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <div class="ai-image-upload__empty-text-{{ ai_gen_id }}">Upload or load an image to get started</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-image-upload__download-section-{{ ai_gen_id }}">
+      <button
+        class="ai-image-upload__button-{{ ai_gen_id }}"
+        id="download-button-{{ ai_gen_id }}"
+      >
+        Download Playmat Image
+      </button>
+    </div>
+  </div>
+</image-upload-tool-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ImageUploadTool{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.canvas = null;
+        this.ctx = null;
+        this.baseImage = null;
+        this.overlayImage = null;
+        this.overlayUrl = null;
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.aspectRatio = 49 / 29;
+        this.dpi = 300;
+        this.bleedWidth = 75;
+        this.safeZoneWidth = 150;
+      }
+
+      connectedCallback() {
+        this.canvas = this.querySelector('#canvas-{{ ai_gen_id }}');
+        this.ctx = this.canvas.getContext('2d');
+        this.emptyState = this.querySelector('#empty-state-{{ ai_gen_id }}');
+        
+        this.initCanvas();
+        this.setupEventListeners();
+      }
+
+      initCanvas() {
+        const container = this.canvas.parentElement;
+        const displayWidth = container.offsetWidth;
+        const displayHeight = displayWidth / this.aspectRatio;
+        
+        this.canvasWidth = Math.round(displayWidth * (this.dpi / 96));
+        this.canvasHeight = Math.round(displayHeight * (this.dpi / 96));
+        
+        this.canvas.width = this.canvasWidth;
+        this.canvas.height = this.canvasHeight;
+        this.canvas.style.width = displayWidth + 'px';
+        this.canvas.style.height = displayHeight + 'px';
+        
+        this.scaleFactor = this.canvasWidth / displayWidth;
+        
+        this.drawCanvas();
+      }
+
+      setupEventListeners() {
+        const fileInput = this.querySelector('#file-input-{{ ai_gen_id }}');
+        const uploadButton = this.querySelector('#upload-button-{{ ai_gen_id }}');
+        const urlInput = this.querySelector('#url-input-{{ ai_gen_id }}');
+        const loadUrlButton = this.querySelector('#load-url-button-{{ ai_gen_id }}');
+        const zoomSlider = this.querySelector('#zoom-slider-{{ ai_gen_id }}');
+        const resetButton = this.querySelector('#reset-button-{{ ai_gen_id }}');
+        const downloadButton = this.querySelector('#download-button-{{ ai_gen_id }}');
+        const overlayOptions = this.querySelectorAll('.ai-image-upload__overlay-option-{{ ai_gen_id }}');
+
+        uploadButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        loadUrlButton.addEventListener('click', () => this.loadImageFromUrl(urlInput.value));
+        zoomSlider.addEventListener('input', (e) => this.handleZoom(e.target.value));
+        resetButton.addEventListener('click', () => this.resetPosition());
+        downloadButton.addEventListener('click', () => this.downloadImage());
+
+        overlayOptions.forEach(option => {
+          option.addEventListener('click', () => this.selectOverlay(option));
+        });
+
+        this.canvas.addEventListener('mousedown', (e) => this.startDrag(e));
+        this.canvas.addEventListener('mousemove', (e) => this.drag(e));
+        this.canvas.addEventListener('mouseup', () => this.endDrag());
+        this.canvas.addEventListener('mouseleave', () => this.endDrag());
+
+        this.canvas.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]));
+        this.canvas.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          this.drag(e.touches[0]);
+        });
+        this.canvas.addEventListener('touchend', () => this.endDrag());
+
+        window.addEventListener('resize', () => this.initCanvas());
+      }
+
+      handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            this.loadImage(event.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      loadImageFromUrl(url) {
+        if (!url) return;
+        this.loadImage(url);
+      }
+
+      loadImage(src) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          this.baseImage = img;
+          this.resetPosition();
+          this.emptyState.style.display = 'none';
+        };
+        img.onerror = () => {
+          alert('Failed to load image. Please try another image or URL.');
+        };
+        img.src = src;
+      }
+
+      selectOverlay(option) {
+        this.querySelectorAll('.ai-image-upload__overlay-option-{{ ai_gen_id }}').forEach(opt => {
+          opt.classList.remove('active');
+        });
+        option.classList.add('active');
+
+        const overlayId = option.dataset.overlay;
+        this.overlayUrl = option.dataset.url || null;
+
+        if (overlayId === 'none') {
+          this.overlayImage = null;
+          this.drawCanvas();
+          return;
+        }
+
+        const overlayImg = option.querySelector('.ai-image-upload__overlay-image-{{ ai_gen_id }}');
+        if (overlayImg) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            this.overlayImage = img;
+            this.drawCanvas();
+          };
+          img.src = overlayImg.src;
+        }
+      }
+
+      handleZoom(value) {
+        this.scale = parseFloat(value);
+        this.drawCanvas();
+      }
+
+      resetPosition() {
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.querySelector('#zoom-slider-{{ ai_gen_id }}').value = 1;
+        this.drawCanvas();
+      }
+
+      startDrag(e) {
+        if (!this.baseImage) return;
+        this.isDragging = true;
+        const rect = this.canvas.getBoundingClientRect();
+        this.dragStartX = (e.clientX - rect.left) * this.scaleFactor - this.offsetX;
+        this.dragStartY = (e.clientY - rect.top) * this.scaleFactor - this.offsetY;
+      }
+
+      drag(e) {
+        if (!this.isDragging || !this.baseImage) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.offsetX = (e.clientX - rect.left) * this.scaleFactor - this.dragStartX;
+        this.offsetY = (e.clientY - rect.top) * this.scaleFactor - this.dragStartY;
+        this.drawCanvas();
+      }
+
+      endDrag() {
+        this.isDragging = false;
+      }
+
+      drawCanvas() {
+        this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        if (this.baseImage) {
+          const imgAspect = this.baseImage.width / this.baseImage.height;
+          const canvasAspect = this.canvasWidth / this.canvasHeight;
+          
+          let drawWidth, drawHeight;
+          if (imgAspect > canvasAspect) {
+            drawHeight = this.canvasHeight * this.scale;
+            drawWidth = drawHeight * imgAspect;
+          } else {
+            drawWidth = this.canvasWidth * this.scale;
+            drawHeight = drawWidth / imgAspect;
+          }
+
+          const x = (this.canvasWidth - drawWidth) / 2 + this.offsetX;
+          const y = (this.canvasHeight - drawHeight) / 2 + this.offsetY;
+
+          this.ctx.drawImage(this.baseImage, x, y, drawWidth, drawHeight);
+        }
+
+        this.drawBleedArea();
+        this.drawSafeZone();
+
+        if (this.overlayImage) {
+          this.ctx.drawImage(this.overlayImage, 0, 0, this.canvasWidth, this.canvasHeight);
+        }
+      }
+
+      drawBleedArea() {
+        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+        
+        this.ctx.fillRect(0, 0, this.canvasWidth, this.bleedWidth);
+        this.ctx.fillRect(0, this.canvasHeight - this.bleedWidth, this.canvasWidth, this.bleedWidth);
+        this.ctx.fillRect(0, 0, this.bleedWidth, this.canvasHeight);
+        this.ctx.fillRect(this.canvasWidth - this.bleedWidth, 0, this.bleedWidth, this.canvasHeight);
+      }
+
+      drawSafeZone() {
+        this.ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+        
+        const safeStart = this.bleedWidth;
+        const safeEnd = this.bleedWidth + this.safeZoneWidth;
+        
+        this.ctx.fillRect(safeStart, safeStart, this.canvasWidth - (safeStart * 2), this.safeZoneWidth);
+        this.ctx.fillRect(safeStart, this.canvasHeight - safeEnd, this.canvasWidth - (safeStart * 2), this.safeZoneWidth);
+        this.ctx.fillRect(safeStart, safeStart, this.safeZoneWidth, this.canvasHeight - (safeStart * 2));
+        this.ctx.fillRect(this.canvasWidth - safeEnd, safeStart, this.safeZoneWidth, this.canvasHeight - (safeStart * 2));
+      }
+
+      downloadImage() {
+        if (!this.baseImage) {
+          alert('Please upload an image first');
+          return;
+        }
+
+        const link = document.createElement('a');
+        link.download = 'playmat-' + Date.now() + '.png';
+        link.href = this.canvas.toDataURL('image/png');
+        
+        if (this.overlayUrl) {
+          window.open(this.overlayUrl, '_blank');
+        }
+        
+        link.click();
+      }
+    }
+
+    customElements.define('image-upload-tool-{{ ai_gen_id }}', ImageUploadTool{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Image upload tool",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Playmat Image Creator"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Upload your image and position it within the 49:29 playmat area. Red shows the bleed area, yellow shows the safe zone for important content."
+    },
+    {
+      "type": "header",
+      "content": "Overlays"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_overlays",
+      "label": "Show overlay options",
+      "default": true
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_1",
+      "label": "Overlay 1"
+    },
+    {
+      "type": "url",
+      "id": "overlay_1_url",
+      "label": "Overlay 1 link"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_2",
+      "label": "Overlay 2"
+    },
+    {
+      "type": "url",
+      "id": "overlay_2_url",
+      "label": "Overlay 2 link"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_3",
+      "label": "Overlay 3"
+    },
+    {
+      "type": "url",
+      "id": "overlay_3_url",
+      "label": "Overlay 3 link"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_4",
+      "label": "Overlay 4"
+    },
+    {
+      "type": "url",
+      "id": "overlay_4_url",
+      "label": "Overlay 4 link"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_5",
+      "label": "Overlay 5"
+    },
+    {
+      "type": "url",
+      "id": "overlay_5_url",
+      "label": "Overlay 5 link"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "controls_bg_color",
+      "label": "Controls background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Borders",
+      "default": "#e0e0e0"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Primary button",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Primary button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Primary button hover",
+      "default": "#0298d4"
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_color",
+      "label": "Secondary button",
+      "default": "#df5918"
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_text_color",
+      "label": "Secondary button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_hover_color",
+      "label": "Secondary button hover",
+      "default": "#c54d15"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image upload tool"
+    }
+  ]
+}
+{% endschema %}

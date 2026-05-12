@@ -1,0 +1,763 @@
+{% doc %}
+  @prompt
+    Create a Liquid section called rubicon-image-uploader that runs fully client-side using native HTML, CSS, and JavaScript (no external libraries or React).
+    
+    Let users upload an image and crop it to a fixed 49:29 aspect ratio. Show a cropping interface with a movable, resizable crop window that enforces the ratio. Users can adjust the window size to fit their image.
+    
+    After cropping, convert the image to 300 DPI and show a canvas preview with two guides:
+    
+    A 75px bleed border (30% opacity) around the outer edge
+    
+    A 150px safe area (40% opaque yellow) inset from the bleed These help users see where artwork may be trimmed.
+    
+    Include a dropdown to select overlay images (defined in Liquid) and render them transparently over the cropped image.
+    
+    Add a color picker to recolor white PNG overlays while preserving transparency.
+    
+    Include a Download Image button that exports the final result (cropped image + recolored overlay + guides) as a PNG. Style the interface cleanly and center it for ease of use.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .rubicon-uploader-{{ ai_gen_id }} {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    font-family: {{ settings.type_body_font.family }}, sans-serif;
+  }
+
+  .rubicon-uploader__container-{{ ai_gen_id }} {
+    background-color: {{ block.settings.background_color }};
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .rubicon-uploader__title-{{ ai_gen_id }} {
+    font-family: {{ settings.type_heading_font.family }}, sans-serif;
+    font-size: 32px;
+    margin: 0 0 24px;
+    text-align: center;
+    color: {{ block.settings.text_color }};
+  }
+
+  .rubicon-uploader__upload-area-{{ ai_gen_id }} {
+    border: 2px dashed {{ block.settings.border_color }};
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 24px;
+  }
+
+  .rubicon-uploader__upload-area-{{ ai_gen_id }}:hover {
+    border-color: {{ block.settings.primary_color }};
+    background-color: rgba(2, 182, 250, 0.05);
+  }
+
+  .rubicon-uploader__upload-text-{{ ai_gen_id }} {
+    font-size: 16px;
+    color: {{ block.settings.text_color }};
+    margin: 0;
+  }
+
+  .rubicon-uploader__file-input-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .rubicon-uploader__crop-container-{{ ai_gen_id }} {
+    display: none;
+    margin-bottom: 24px;
+  }
+
+  .rubicon-uploader__crop-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto 16px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+  }
+
+  .rubicon-uploader__crop-image-{{ ai_gen_id }} {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .rubicon-uploader__crop-box-{{ ai_gen_id }} {
+    position: absolute;
+    border: 2px solid {{ block.settings.primary_color }};
+    cursor: move;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  }
+
+  .rubicon-uploader__resize-handle-{{ ai_gen_id }} {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: {{ block.settings.primary_color }};
+    border: 2px solid #fff;
+    border-radius: 50%;
+  }
+
+  .rubicon-uploader__resize-handle--nw-{{ ai_gen_id }} {
+    top: -6px;
+    left: -6px;
+    cursor: nw-resize;
+  }
+
+  .rubicon-uploader__resize-handle--ne-{{ ai_gen_id }} {
+    top: -6px;
+    right: -6px;
+    cursor: ne-resize;
+  }
+
+  .rubicon-uploader__resize-handle--sw-{{ ai_gen_id }} {
+    bottom: -6px;
+    left: -6px;
+    cursor: sw-resize;
+  }
+
+  .rubicon-uploader__resize-handle--se-{{ ai_gen_id }} {
+    bottom: -6px;
+    right: -6px;
+    cursor: se-resize;
+  }
+
+  .rubicon-uploader__controls-{{ ai_gen_id }} {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .rubicon-uploader__control-group-{{ ai_gen_id }} {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .rubicon-uploader__label-{{ ai_gen_id }} {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .rubicon-uploader__select-{{ ai_gen_id }},
+  .rubicon-uploader__color-input-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #fff;
+  }
+
+  .rubicon-uploader__color-input-{{ ai_gen_id }} {
+    height: 44px;
+    cursor: pointer;
+  }
+
+  .rubicon-uploader__button-{{ ai_gen_id }} {
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_color }};
+    color: {{ block.settings.button_text_color }};
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .rubicon-uploader__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  .rubicon-uploader__button-{{ ai_gen_id }}:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .rubicon-uploader__preview-container-{{ ai_gen_id }} {
+    display: none;
+    margin-top: 24px;
+  }
+
+  .rubicon-uploader__preview-canvas-{{ ai_gen_id }} {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto 16px;
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: 4px;
+  }
+
+  .rubicon-uploader__button-group-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  @media screen and (max-width: 768px) {
+    .rubicon-uploader__controls-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .rubicon-uploader__button-group-{{ ai_gen_id }} {
+      flex-direction: column;
+    }
+
+    .rubicon-uploader__button-{{ ai_gen_id }} {
+      width: 100%;
+    }
+  }
+{% endstyle %}
+
+<rubicon-image-uploader-{{ ai_gen_id }} class="rubicon-uploader-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="rubicon-uploader__container-{{ ai_gen_id }}">
+    <h2 class="rubicon-uploader__title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+
+    <div class="rubicon-uploader__upload-area-{{ ai_gen_id }}" data-upload-area>
+      <p class="rubicon-uploader__upload-text-{{ ai_gen_id }}">{{ block.settings.upload_text }}</p>
+      <input
+        type="file"
+        accept="image/*"
+        class="rubicon-uploader__file-input-{{ ai_gen_id }}"
+        data-file-input
+      >
+    </div>
+
+    <div class="rubicon-uploader__crop-container-{{ ai_gen_id }}" data-crop-container>
+      <div class="rubicon-uploader__crop-wrapper-{{ ai_gen_id }}" data-crop-wrapper>
+        <img class="rubicon-uploader__crop-image-{{ ai_gen_id }}" data-crop-image alt="Image to crop">
+        <div class="rubicon-uploader__crop-box-{{ ai_gen_id }}" data-crop-box>
+          <div class="rubicon-uploader__resize-handle-{{ ai_gen_id }} rubicon-uploader__resize-handle--nw-{{ ai_gen_id }}" data-handle="nw"></div>
+          <div class="rubicon-uploader__resize-handle-{{ ai_gen_id }} rubicon-uploader__resize-handle--ne-{{ ai_gen_id }}" data-handle="ne"></div>
+          <div class="rubicon-uploader__resize-handle-{{ ai_gen_id }} rubicon-uploader__resize-handle--sw-{{ ai_gen_id }}" data-handle="sw"></div>
+          <div class="rubicon-uploader__resize-handle-{{ ai_gen_id }} rubicon-uploader__resize-handle--se-{{ ai_gen_id }}" data-handle="se"></div>
+        </div>
+      </div>
+
+      <div class="rubicon-uploader__controls-{{ ai_gen_id }}">
+        <div class="rubicon-uploader__control-group-{{ ai_gen_id }}">
+          <label class="rubicon-uploader__label-{{ ai_gen_id }}">Overlay Image</label>
+          <select class="rubicon-uploader__select-{{ ai_gen_id }}" data-overlay-select>
+            <option value="">None</option>
+            {% if block.settings.overlay_1 != blank %}
+              <option value="overlay_1">{{ block.settings.overlay_1_name }}</option>
+            {% endif %}
+            {% if block.settings.overlay_2 != blank %}
+              <option value="overlay_2">{{ block.settings.overlay_2_name }}</option>
+            {% endif %}
+            {% if block.settings.overlay_3 != blank %}
+              <option value="overlay_3">{{ block.settings.overlay_3_name }}</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <div class="rubicon-uploader__control-group-{{ ai_gen_id }}">
+          <label class="rubicon-uploader__label-{{ ai_gen_id }}">Overlay Color</label>
+          <input
+            type="color"
+            class="rubicon-uploader__color-input-{{ ai_gen_id }}"
+            data-color-picker
+            value="{{ block.settings.default_overlay_color }}"
+          >
+        </div>
+      </div>
+
+      <div class="rubicon-uploader__button-group-{{ ai_gen_id }}">
+        <button class="rubicon-uploader__button-{{ ai_gen_id }}" data-crop-button>
+          Apply Crop
+        </button>
+      </div>
+    </div>
+
+    <div class="rubicon-uploader__preview-container-{{ ai_gen_id }}" data-preview-container>
+      <canvas class="rubicon-uploader__preview-canvas-{{ ai_gen_id }}" data-preview-canvas></canvas>
+      <div class="rubicon-uploader__button-group-{{ ai_gen_id }}">
+        <button class="rubicon-uploader__button-{{ ai_gen_id }}" data-download-button>
+          Download Image
+        </button>
+        <button class="rubicon-uploader__button-{{ ai_gen_id }}" data-reset-button>
+          Upload New Image
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: none;">
+    {% if block.settings.overlay_1 != blank %}
+      <img data-overlay-image="overlay_1" src="{{ block.settings.overlay_1 | image_url: width: 2000 }}" alt="Overlay 1">
+    {% endif %}
+    {% if block.settings.overlay_2 != blank %}
+      <img data-overlay-image="overlay_2" src="{{ block.settings.overlay_2 | image_url: width: 2000 }}" alt="Overlay 2">
+    {% endif %}
+    {% if block.settings.overlay_3 != blank %}
+      <img data-overlay-image="overlay_3" src="{{ block.settings.overlay_3 | image_url: width: 2000 }}" alt="Overlay 3">
+    {% endif %}
+  </div>
+</rubicon-image-uploader-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class RubiconImageUploader{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.aspectRatio = 49 / 29;
+        this.dpi = 300;
+        this.bleedPx = 75;
+        this.safeAreaPx = 150;
+        this.isDragging = false;
+        this.isResizing = false;
+        this.resizeHandle = null;
+        this.startX = 0;
+        this.startY = 0;
+        this.cropData = { x: 0, y: 0, width: 0, height: 0 };
+        this.originalImage = null;
+        this.overlayImages = {};
+        this.currentOverlay = null;
+        this.overlayColor = '{{ block.settings.default_overlay_color }}';
+      }
+
+      connectedCallback() {
+        this.uploadArea = this.querySelector('[data-upload-area]');
+        this.fileInput = this.querySelector('[data-file-input]');
+        this.cropContainer = this.querySelector('[data-crop-container]');
+        this.cropWrapper = this.querySelector('[data-crop-wrapper]');
+        this.cropImage = this.querySelector('[data-crop-image]');
+        this.cropBox = this.querySelector('[data-crop-box]');
+        this.cropButton = this.querySelector('[data-crop-button]');
+        this.previewContainer = this.querySelector('[data-preview-container]');
+        this.previewCanvas = this.querySelector('[data-preview-canvas]');
+        this.downloadButton = this.querySelector('[data-download-button]');
+        this.resetButton = this.querySelector('[data-reset-button]');
+        this.overlaySelect = this.querySelector('[data-overlay-select]');
+        this.colorPicker = this.querySelector('[data-color-picker]');
+
+        this.loadOverlayImages();
+        this.setupEventListeners();
+      }
+
+      loadOverlayImages() {
+        const overlayImgs = this.querySelectorAll('[data-overlay-image]');
+        overlayImgs.forEach(img => {
+          const key = img.getAttribute('data-overlay-image');
+          this.overlayImages[key] = img;
+        });
+      }
+
+      setupEventListeners() {
+        this.uploadArea.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        this.cropBox.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        document.addEventListener('mouseup', () => this.handleMouseUp());
+        this.cropButton.addEventListener('click', () => this.applyCrop());
+        this.downloadButton.addEventListener('click', () => this.downloadImage());
+        this.resetButton.addEventListener('click', () => this.reset());
+        this.overlaySelect.addEventListener('change', (e) => this.handleOverlayChange(e));
+        this.colorPicker.addEventListener('input', (e) => this.handleColorChange(e));
+      }
+
+      handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            this.originalImage = img;
+            this.initializeCrop();
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      initializeCrop() {
+        this.cropImage.src = this.originalImage.src;
+        this.cropContainer.style.display = 'block';
+        this.previewContainer.style.display = 'none';
+
+        this.cropImage.onload = () => {
+          const imgRect = this.cropImage.getBoundingClientRect();
+          const wrapperRect = this.cropWrapper.getBoundingClientRect();
+
+          const maxWidth = imgRect.width * 0.8;
+          const maxHeight = imgRect.height * 0.8;
+
+          let cropWidth = maxWidth;
+          let cropHeight = cropWidth / this.aspectRatio;
+
+          if (cropHeight > maxHeight) {
+            cropHeight = maxHeight;
+            cropWidth = cropHeight * this.aspectRatio;
+          }
+
+          this.cropData = {
+            x: (imgRect.width - cropWidth) / 2,
+            y: (imgRect.height - cropHeight) / 2,
+            width: cropWidth,
+            height: cropHeight
+          };
+
+          this.updateCropBox();
+        };
+      }
+
+      updateCropBox() {
+        this.cropBox.style.left = this.cropData.x + 'px';
+        this.cropBox.style.top = this.cropData.y + 'px';
+        this.cropBox.style.width = this.cropData.width + 'px';
+        this.cropBox.style.height = this.cropData.height + 'px';
+      }
+
+      handleMouseDown(e) {
+        e.preventDefault();
+        const handle = e.target.getAttribute('data-handle');
+
+        if (handle) {
+          this.isResizing = true;
+          this.resizeHandle = handle;
+        } else {
+          this.isDragging = true;
+        }
+
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+      }
+
+      handleMouseMove(e) {
+        if (!this.isDragging && !this.isResizing) return;
+
+        const deltaX = e.clientX - this.startX;
+        const deltaY = e.clientY - this.startY;
+
+        if (this.isDragging) {
+          const imgRect = this.cropImage.getBoundingClientRect();
+          let newX = this.cropData.x + deltaX;
+          let newY = this.cropData.y + deltaY;
+
+          newX = Math.max(0, Math.min(newX, imgRect.width - this.cropData.width));
+          newY = Math.max(0, Math.min(newY, imgRect.height - this.cropData.height));
+
+          this.cropData.x = newX;
+          this.cropData.y = newY;
+        } else if (this.isResizing) {
+          this.handleResize(deltaX, deltaY);
+        }
+
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+        this.updateCropBox();
+      }
+
+      handleResize(deltaX, deltaY) {
+        const imgRect = this.cropImage.getBoundingClientRect();
+        let newWidth = this.cropData.width;
+        let newHeight = this.cropData.height;
+        let newX = this.cropData.x;
+        let newY = this.cropData.y;
+
+        if (this.resizeHandle.includes('e')) {
+          newWidth += deltaX;
+        }
+        if (this.resizeHandle.includes('w')) {
+          newWidth -= deltaX;
+          newX += deltaX;
+        }
+        if (this.resizeHandle.includes('s')) {
+          newHeight += deltaY;
+        }
+        if (this.resizeHandle.includes('n')) {
+          newHeight -= deltaY;
+          newY += deltaY;
+        }
+
+        newHeight = newWidth / this.aspectRatio;
+
+        if (this.resizeHandle.includes('n')) {
+          newY = this.cropData.y + this.cropData.height - newHeight;
+        }
+
+        if (newWidth < 50 || newHeight < 50) return;
+        if (newX < 0 || newY < 0) return;
+        if (newX + newWidth > imgRect.width || newY + newHeight > imgRect.height) return;
+
+        this.cropData.width = newWidth;
+        this.cropData.height = newHeight;
+        this.cropData.x = newX;
+        this.cropData.y = newY;
+      }
+
+      handleMouseUp() {
+        this.isDragging = false;
+        this.isResizing = false;
+        this.resizeHandle = null;
+      }
+
+      applyCrop() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const imgRect = this.cropImage.getBoundingClientRect();
+        const scaleX = this.originalImage.width / imgRect.width;
+        const scaleY = this.originalImage.height / imgRect.height;
+
+        const sourceX = this.cropData.x * scaleX;
+        const sourceY = this.cropData.y * scaleY;
+        const sourceWidth = this.cropData.width * scaleX;
+        const sourceHeight = this.cropData.height * scaleY;
+
+        const targetWidth = Math.round(sourceWidth * (this.dpi / 96));
+        const targetHeight = Math.round(sourceHeight * (this.dpi / 96));
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        ctx.drawImage(
+          this.originalImage,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, targetWidth, targetHeight
+        );
+
+        this.croppedImageData = canvas.toDataURL('image/png');
+        this.renderPreview();
+      }
+
+      renderPreview() {
+        const canvas = this.previewCanvas;
+        const ctx = canvas.getContext('2d');
+
+        const img = new Image();
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          ctx.drawImage(img, 0, 0);
+
+          this.drawBleedGuide(ctx, canvas.width, canvas.height);
+          this.drawSafeArea(ctx, canvas.width, canvas.height);
+
+          if (this.currentOverlay) {
+            this.drawOverlay(ctx, canvas.width, canvas.height);
+          }
+
+          this.cropContainer.style.display = 'none';
+          this.previewContainer.style.display = 'block';
+        };
+        img.src = this.croppedImageData;
+      }
+
+      drawBleedGuide(ctx, width, height) {
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.bleedPx, this.bleedPx, width - this.bleedPx * 2, height - this.bleedPx * 2);
+      }
+
+      drawSafeArea(ctx, width, height) {
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+        ctx.fillRect(0, 0, width, this.safeAreaPx);
+        ctx.fillRect(0, height - this.safeAreaPx, width, this.safeAreaPx);
+        ctx.fillRect(0, 0, this.safeAreaPx, height);
+        ctx.fillRect(width - this.safeAreaPx, 0, this.safeAreaPx, height);
+      }
+
+      drawOverlay(ctx, width, height) {
+        const overlayImg = this.overlayImages[this.currentOverlay];
+        if (!overlayImg || !overlayImg.complete) return;
+
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = overlayImg.width;
+        tempCanvas.height = overlayImg.height;
+
+        tempCtx.drawImage(overlayImg, 0, 0);
+
+        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imageData.data;
+
+        const color = this.hexToRgb(this.overlayColor);
+
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] > 200 && data[i + 1] > 200 && data[i + 2] > 200) {
+            data[i] = color.r;
+            data[i + 1] = color.g;
+            data[i + 2] = color.b;
+          }
+        }
+
+        tempCtx.putImageData(imageData, 0, 0);
+
+        ctx.globalAlpha = 0.7;
+        ctx.drawImage(tempCanvas, 0, 0, width, height);
+        ctx.globalAlpha = 1.0;
+      }
+
+      hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+      }
+
+      handleOverlayChange(e) {
+        this.currentOverlay = e.target.value || null;
+        if (this.croppedImageData) {
+          this.renderPreview();
+        }
+      }
+
+      handleColorChange(e) {
+        this.overlayColor = e.target.value;
+        if (this.croppedImageData && this.currentOverlay) {
+          this.renderPreview();
+        }
+      }
+
+      downloadImage() {
+        const link = document.createElement('a');
+        link.download = 'rubicon-image-' + Date.now() + '.png';
+        link.href = this.previewCanvas.toDataURL('image/png');
+        link.click();
+      }
+
+      reset() {
+        this.cropContainer.style.display = 'none';
+        this.previewContainer.style.display = 'none';
+        this.fileInput.value = '';
+        this.overlaySelect.value = '';
+        this.currentOverlay = null;
+        this.croppedImageData = null;
+      }
+    }
+
+    customElements.define('rubicon-image-uploader-{{ ai_gen_id }}', RubiconImageUploader{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Rubicon image uploader",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Image Uploader & Cropper"
+    },
+    {
+      "type": "text",
+      "id": "upload_text",
+      "label": "Upload text",
+      "default": "Click to upload an image or drag and drop"
+    },
+    {
+      "type": "header",
+      "content": "Overlay images"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_1",
+      "label": "Overlay 1"
+    },
+    {
+      "type": "text",
+      "id": "overlay_1_name",
+      "label": "Overlay 1 name",
+      "default": "Overlay 1"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_2",
+      "label": "Overlay 2"
+    },
+    {
+      "type": "text",
+      "id": "overlay_2_name",
+      "label": "Overlay 2 name",
+      "default": "Overlay 2"
+    },
+    {
+      "type": "image_picker",
+      "id": "overlay_3",
+      "label": "Overlay 3"
+    },
+    {
+      "type": "text",
+      "id": "overlay_3_name",
+      "label": "Overlay 3 name",
+      "default": "Overlay 3"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary accent",
+      "default": "#02b6fa"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Button hover",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "default_overlay_color",
+      "label": "Default overlay color",
+      "default": "#02b6fa"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Rubicon image uploader"
+    }
+  ]
+}
+{% endschema %}
