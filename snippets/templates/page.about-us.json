@@ -1,0 +1,202 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "page-content": {
+          "type": "page-content",
+          "disabled": true,
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 40
+      }
+    },
+    "1760580306f24c5bc2": {
+      "type": "_blocks",
+      "blocks": {
+        "text_F8kx3D": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>About Us<\/h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h3",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "divider_GHXGxQ": {
+          "type": "_divider",
+          "name": "t:names.divider",
+          "settings": {
+            "thickness": 5,
+            "divider_color": "#df5918",
+            "corner_radius": "rounded",
+            "width_percent": 100,
+            "padding-block-start": 20,
+            "padding-block-end": 0
+          },
+          "blocks": {}
+        },
+        "group_KHB6At": {
+          "type": "group",
+          "name": "t:names.group",
+          "settings": {
+            "content_direction": "row",
+            "vertical_on_mobile": true,
+            "horizontal_alignment": "flex-start",
+            "vertical_alignment": "center",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 12,
+            "width": "fill",
+            "custom_width": 40,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image": "shopify:\/\/shop_images\/vibrant-array-colorful-embroidered-patches-hues-white-black-purple-pink.webp",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": false,
+            "overlay_color": "#00000069",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "link": "",
+            "open_in_new_tab": false,
+            "placeholder": "",
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "text_abE3TF": {
+              "type": "text",
+              "name": "t:names.text",
+              "settings": {
+                "text": "<h3><strong>Our Story<\/strong><\/h3><h4>Rubicon Game Supplies is a small games shop located in Marlton, NJ. We offer custom playmats and accessories to individuals and Local Game Stores (LGSs), and we pride ourselves on customer service, quality, and value.<\/h4><h4>On January 1st, 2024, I launched my first products on <a href=\"https:\/\/rubicongamesupplies.etsy.com\" target=\"_blank\" title=\"Rubicon Game Supplies' Etsy Shop\">Etsy<\/a>, but I felt a calling to focus more on playmats and accessories. Thus, on March 15th (The Ides of March), Rubicon Game Supplies was officially registered, and we shifted our focus entirely to providing unique, high-quality playmats and gaming essentials.<\/h4><h3><strong>Our Mission and Values<\/strong><\/h3><h4>At Rubicon Game Supplies, our mission is embodied in the word \"AVE,\" a Latin greeting meaning \"hail\" or \"welcome.\" This simple acronym represents our core values:<\/h4><ul><li><h4><strong> Affordable<\/strong>: Everyone should have access to quality gaming supplies without breaking the bank. Our products are priced to be accessible to all gamers.<br\/><\/h4><\/li><li><h4><strong> Value<\/strong>: We are committed to offering high-value products that exceed expectations. If a product does not meet our high standards, it doesn't make it to our store.<br\/><\/h4><\/li><li><h4><strong> Exceptional<\/strong>: From the design of our products to the level of service we provide, we strive for excellence in everything we do. Our excellent quality sets us apart from the rest.<br\/><\/h4><\/li><\/ul><h3><strong>What Makes Us Unique<\/strong><\/h3><h4>Rubicon Game Supplies stands out through our dedication to creating custom designs tailored to enhance the gaming experience. Our playmats are not just functional but are crafted to reflect the unique preferences of players. We run our business with a casual yet professional approach, always prioritizing quality, exceptional customer service, and the highest value.<\/h4><h3><strong>Cross the Rubicon With Us<\/strong><\/h3><h4>We invite you to cast the die and explore our collection of custom playmats and gaming accessories. Whether you're a seasoned player or new to the world of board and card games, our products are designed to elevate your gaming experience. At Rubicon Game Supplies, you're not just a customer–you're Imperator.<\/h4>",
+                "width": "100%",
+                "max_width": "none",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 30,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "image_HTXymq": {
+              "type": "image",
+              "name": "t:names.image",
+              "settings": {
+                "image": "shopify:\/\/shop_images\/stack-colorful-embroidered-mousepads-vibrant-hues-white-border-rubicon-game.webp",
+                "link": "",
+                "image_ratio": "square",
+                "width": "custom",
+                "custom_width": 50,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 6,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 10,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "text_abE3TF",
+            "image_HTXymq"
+          ]
+        }
+      },
+      "block_order": [
+        "text_F8kx3D",
+        "divider_GHXGxQ",
+        "group_KHB6At"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "scheme-1",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    }
+  },
+  "order": [
+    "main",
+    "1760580306f24c5bc2"
+  ]
+}

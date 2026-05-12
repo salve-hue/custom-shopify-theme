@@ -1,0 +1,19 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "settings": {
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    },
+    "designer": {
+      "type": "custom-playmat-designer",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main",
+    "designer"
+  ]
+}
